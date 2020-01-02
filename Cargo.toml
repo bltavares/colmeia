@@ -12,12 +12,12 @@ blake2-rfc = "0.2.18"
 hex = "0.4.0"
 env_logger = "0.7.1"
 
-libp2p = { version = "0.13.1", path = "../rust-libp2p" }
+libp2p = { version = "0.13.1", git = "https://github.com/tomaka/libp2p-rs", branch = "merge-master" }
 protobuf = "=2.8.1"
 
 mdns = "0.3.1"
 
-trust-dns-resolver = { version = "0.18.0", features = ["mdns", "tokio-runtime"], path = "../trust-dns/crates/resolver" }
-trust-dns-client = { version = "0.18.0", features = ["mdns"], path = "../trust-dns/crates/client" }
-trust-dns-proto = { version = "0.18.0", features = ["mdns"], path = "../trust-dns/crates/proto" }
+trust-dns-resolver = { version = "0.18.0", features = ["mdns", "tokio-runtime"]}
+trust-dns-client = { version = "0.18.0", features = ["mdns"]  }
+trust-dns-proto = { version = "0.18.0", features = ["mdns"] }
 tokio = "0.2.6"

@@ -1,7 +1,7 @@
 use blake2_rfc::blake2b::Blake2b;
 use ed25519_dalek::PublicKey;
 
-const HOSTNAME: &'static str = ".dat.local";
+const HOSTNAME: &str = ".dat.local";
 const HYPERCORE: [u8; 9] = *b"hypercore";
 
 type Error = Result<(), parse_dat_url::Error>;
@@ -86,10 +86,10 @@ fn async_trustdns(url: &str) {
   use trust_dns_resolver::AsyncResolver;
 
   let mut io_loop = Runtime::new().unwrap();
-  let resolver = AsyncResolver::new_with_conn(
+  let resolver = AsyncResolver::new(
     ResolverConfig::default(),
     ResolverOpts::default(),
-    trust_dns_resolver::TokioConnectionProvider::new(io_loop.handle().clone()),
+    io_loop.handle().clone(),
   );
 
   let resolver = io_loop
@@ -124,7 +124,7 @@ fn main() -> Error {
   let public_key = PublicKey::from_bytes(&public_key_bytes).expect("invalid key");
   let url = to_dns_discovery_key(&to_discovery_key(public_key)) + HOSTNAME;
 
-  mdns_lib(&url);
+  // mdns_lib(&url);
   client_trustdns(&url);
   sync_trustdns(&url);
   async_trustdns(&url);

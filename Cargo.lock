@@ -333,14 +333,14 @@ dependencies = [
  "ed25519-dalek 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p 0.13.1",
+ "libp2p 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "mdns 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "parse-dat-url 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "trust-dns-client 0.18.0",
- "trust-dns-proto 0.18.0",
- "trust-dns-resolver 0.18.0",
+ "trust-dns-client 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "trust-dns-proto 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "trust-dns-resolver 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -901,32 +901,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libp2p"
-version = "0.13.1"
+version = "0.13.2"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
- "libp2p-core-derive 0.13.0",
- "libp2p-deflate 0.5.0",
- "libp2p-dns 0.13.0",
- "libp2p-floodsub 0.13.0",
- "libp2p-identify 0.13.1",
- "libp2p-kad 0.13.1",
- "libp2p-mdns 0.13.1",
- "libp2p-mplex 0.13.0",
- "libp2p-noise 0.11.0",
- "libp2p-ping 0.13.1",
- "libp2p-plaintext 0.13.0",
- "libp2p-secio 0.13.0",
- "libp2p-swarm 0.3.0",
- "libp2p-tcp 0.13.0",
- "libp2p-uds 0.13.0",
- "libp2p-wasm-ext 0.6.0",
- "libp2p-websocket 0.13.0",
- "libp2p-yamux 0.13.0",
- "parity-multiaddr 0.6.0",
- "parity-multihash 0.2.0",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-core-derive 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-deflate 0.5.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-dns 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-floodsub 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-identify 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-kad 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-mdns 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-mplex 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-noise 0.11.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-ping 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-plaintext 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-secio 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-tcp 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-uds 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-wasm-ext 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-websocket 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-yamux 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "parity-multihash 0.2.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-timer 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -934,7 +935,8 @@ dependencies = [
 
 [[package]]
 name = "libp2p-core"
-version = "0.13.1"
+version = "0.13.2"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "asn1_der 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -947,16 +949,16 @@ dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libsecp256k1 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "multistream-select 0.6.1",
- "parity-multiaddr 0.6.0",
- "parity-multihash 0.2.0",
+ "multistream-select 0.6.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "parity-multihash 0.2.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pin-project 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.16.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "rw-stream-sink 0.1.2",
+ "rw-stream-sink 0.1.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unsigned-varint 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -968,6 +970,7 @@ dependencies = [
 [[package]]
 name = "libp2p-core-derive"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -976,32 +979,35 @@ dependencies = [
 [[package]]
 name = "libp2p-deflate"
 version = "0.5.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "flate2 1.0.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
 ]
 
 [[package]]
 name = "libp2p-dns"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "libp2p-floodsub"
-version = "0.13.0"
+version = "0.13.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "cuckoofilter 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
- "libp2p-swarm 0.3.0",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1009,15 +1015,16 @@ dependencies = [
 
 [[package]]
 name = "libp2p-identify"
-version = "0.13.1"
+version = "0.13.2"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures_codec 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
- "libp2p-swarm 0.3.0",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multiaddr 0.6.0",
+ "parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unsigned-varint 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1026,7 +1033,8 @@ dependencies = [
 
 [[package]]
 name = "libp2p-kad"
-version = "0.13.1"
+version = "0.13.2"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "arrayvec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1034,11 +1042,11 @@ dependencies = [
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures_codec 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
- "libp2p-swarm 0.3.0",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multiaddr 0.6.0",
- "parity-multihash 0.2.0",
+ "parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "parity-multihash 0.2.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1052,6 +1060,7 @@ dependencies = [
 [[package]]
 name = "libp2p-mdns"
 version = "0.13.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "async-std 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-encoding 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1059,11 +1068,11 @@ dependencies = [
  "either 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
- "libp2p-swarm 0.3.0",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multiaddr 0.6.0",
+ "parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1073,12 +1082,13 @@ dependencies = [
 [[package]]
 name = "libp2p-mplex"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "fnv 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures_codec 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "unsigned-varint 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1086,13 +1096,14 @@ dependencies = [
 
 [[package]]
 name = "libp2p-noise"
-version = "0.11.0"
+version = "0.11.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "curve25519-dalek 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1105,13 +1116,14 @@ dependencies = [
 [[package]]
 name = "libp2p-ping"
 version = "0.13.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
- "libp2p-swarm 0.3.0",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
+ "libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multiaddr 0.6.0",
+ "parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-timer 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1119,22 +1131,24 @@ dependencies = [
 
 [[package]]
 name = "libp2p-plaintext"
-version = "0.13.0"
+version = "0.13.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures_codec 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "rw-stream-sink 0.1.2",
+ "rw-stream-sink 0.1.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "unsigned-varint 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "libp2p-secio"
-version = "0.13.0"
+version = "0.13.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "aes-ctr 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ctr 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1142,14 +1156,14 @@ dependencies = [
  "hmac 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "js-sys 0.3.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-send-wrapper 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf 2.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quicksink 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ring 0.16.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "rw-stream-sink 0.1.2",
+ "rw-stream-sink 0.1.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "twofish 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1162,9 +1176,10 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm"
 version = "0.3.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-timer 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1173,6 +1188,7 @@ dependencies = [
 [[package]]
 name = "libp2p-tcp"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "async-std 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1180,27 +1196,29 @@ dependencies = [
  "futures-timer 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "get_if_addrs 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ipnet 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "libp2p-uds"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "async-std 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "libp2p-wasm-ext"
 version = "0.6.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "js-sys 0.3.33 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "parity-send-wrapper 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.56 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-futures 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1209,16 +1227,17 @@ dependencies = [
 [[package]]
 name = "libp2p-websocket"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "async-tls 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "either 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "quicksink 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustls 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rw-stream-sink 0.1.2",
+ "rw-stream-sink 0.1.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "soketto 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "webpki 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1228,9 +1247,10 @@ dependencies = [
 [[package]]
 name = "libp2p-yamux"
 version = "0.13.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libp2p-core 0.13.1",
+ "libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1377,6 +1397,7 @@ dependencies = [
 [[package]]
 name = "multistream-select"
 version = "0.6.1"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1459,13 +1480,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "parity-multiaddr"
 version = "0.6.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-encoding 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-multihash 0.2.0",
+ "parity-multihash 0.2.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)",
  "percent-encoding 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "unsigned-varint 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1475,6 +1497,7 @@ dependencies = [
 [[package]]
 name = "parity-multihash"
 version = "0.2.0"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "blake2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1889,6 +1912,7 @@ dependencies = [
 [[package]]
 name = "rw-stream-sink"
 version = "0.1.2"
+source = "git+https://github.com/tomaka/libp2p-rs?branch=merge-master#17e90f0f2c26f8bd0e978e7044c9c6189d6d94b6"
 dependencies = [
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2154,6 +2178,7 @@ dependencies = [
 [[package]]
 name = "trust-dns-client"
 version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "chrono 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-encoding 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2164,12 +2189,13 @@ dependencies = [
  "radix_trie 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "trust-dns-proto 0.18.0",
+ "trust-dns-proto 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "trust-dns-proto"
 version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "async-trait 0.1.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "data-encoding 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2189,6 +2215,7 @@ dependencies = [
 [[package]]
 name = "trust-dns-resolver"
 version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2200,7 +2227,7 @@ dependencies = [
  "resolv-conf 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "trust-dns-proto 0.18.0",
+ "trust-dns-proto 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2648,6 +2675,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum kv-log-macro 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8c54d9f465d530a752e6ebdc217e081a7a614b48cb200f6f0aee21ba6bc9aabb"
 "checksum lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 "checksum libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)" = "d515b1f41455adea1313a4a2ac8a8a477634fbae63cc6100e3aebb207ce61558"
+"checksum libp2p 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-core 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-core-derive 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-deflate 0.5.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-dns 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-floodsub 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-identify 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-kad 0.13.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-mdns 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-mplex 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-noise 0.11.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-ping 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-plaintext 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-secio 0.13.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-swarm 0.3.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-tcp 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-uds 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-wasm-ext 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-websocket 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum libp2p-yamux 0.13.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
 "checksum libsecp256k1 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "df6edf84fd62aad1c93932b39324eaeda3912c1d26bc18dfaee6293848e49a50"
 "checksum libz-sys 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)" = "2eb5e43362e38e2bca2fd5f5134c4d4564a23a5c28e9b95411652021a8675ebe"
 "checksum linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"
@@ -2663,6 +2710,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum mio 0.6.21 (registry+https://github.com/rust-lang/crates.io-index)" = "302dec22bcf6bae6dfb69c647187f4b4d0fb6f535521f7bc022430ce8e12008f"
 "checksum mio-uds 0.6.7 (registry+https://github.com/rust-lang/crates.io-index)" = "966257a94e196b11bb43aca423754d87429960a768de9414f3691d6957abf125"
 "checksum miow 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f2f3b1cf331de6896aabf6e9d55dca90356cc9960cca7eaaf408a355ae919"
+"checksum multistream-select 0.6.1 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
 "checksum nibble_vec 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "c8d77f3db4bce033f4d04db08079b2ef1c3d02b44e86f25d08886fafa7756ffa"
 "checksum nodrop 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
@@ -2673,6 +2721,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "76dac5ed2a876980778b8b85f75a71b6cbf0db0b1232ee12f826bccb00d09d72"
 "checksum once_cell 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "891f486f630e5c5a4916c7e16c4b24a53e78c860b646e9f8e005e4f16847bfed"
 "checksum opaque-debug 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
+"checksum parity-multiaddr 0.6.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
+"checksum parity-multihash 0.2.0 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
 "checksum parity-send-wrapper 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aa9777aa91b8ad9dd5aaa04a9b6bcb02c7f1deb952fca5a66034d5e63afc5c6f"
 "checksum parking_lot 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "92e98c49ab0b7ce5b222f2cc9193fc4efe11c6d0bd4f648e374684a6857b1cfc"
 "checksum parking_lot 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f842b1982eb6c2fe34036a4fbfb06dd185a3f5c8edfaacdf7d1ea10b07de6252"
@@ -2720,6 +2770,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum rustc-hex 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "403bb3a286107a04825a5f82e1270acc1e14028d3d554d7a1e08914549575ab8"
 "checksum rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 "checksum rustls 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b25a18b1bf7387f0145e7f8324e700805aade3842dd3db2e74e4cdeb4677c09e"
+"checksum rw-stream-sink 0.1.2 (git+https://github.com/tomaka/libp2p-rs?branch=merge-master)" = "<none>"
 "checksum scopeguard 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b42e15e59b18a828bbf5c58ea01debb36b9b096346de35d941dcb89009f24a0d"
 "checksum sct 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e3042af939fca8c3453b7af0f1c66e533a15a86169e39de2657310ade8f98d3c"
 "checksum semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
@@ -2751,6 +2802,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
 "checksum tokio 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0e1bef565a52394086ecac0a6fa3b8ace4cb3a138ee1d96bd2b93283b56824e3"
 "checksum tokio-io 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "5090db468dad16e1a7a54c8c67280c5e4b544f3d3e018f0b913b400261f85926"
+"checksum trust-dns-client 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)" = "981c13fea26fd08918c72634926c4eed3d7ab1e95be9e235a85b3c8e00955df0"
+"checksum trust-dns-proto 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3a9611c00d953efffa94658535271d5fd1ec3694c3491e3da72e3b5b1e9d54fa"
+"checksum trust-dns-resolver 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c4b6006c06bdc21d56e2abd56a92cb7d69316419792260ef69fd1d7b0b7b1b21"
 "checksum twofish 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712d261e83e727c8e2dbb75dacac67c36e35db36a958ee504f2164fc052434e1"
 "checksum typenum 1.11.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6d2783fe2d6b8c1101136184eb41be8b1ad379e4657050b8aaff0c79ee7575f9"
 "checksum uint 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e75a4cdd7b87b28840dba13c483b9a88ee6bbf16ba5c951ee1ecfcf723078e0d"
