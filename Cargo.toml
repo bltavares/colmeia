@@ -1,0 +1,23 @@
+[package]
+name = "colmeia"
+version = "0.1.0"
+authors = ["Bruno Tavares"]
+edition = "2018"
+
+[dependencies]
+async-std = "1.4.0"
+parse-dat-url = "0.1.0"
+ed25519-dalek = "0.9.1"
+blake2-rfc = "0.2.18"
+hex = "0.4.0"
+env_logger = "0.7.1"
+
+libp2p = { version = "0.13.1", path = "../rust-libp2p" }
+protobuf = "=2.8.1"
+
+mdns = "0.3.1"
+
+trust-dns-resolver = { version = "0.18.0", features = ["mdns", "tokio-runtime"], path = "../trust-dns/crates/resolver" }
+trust-dns-client = { version = "0.18.0", features = ["mdns"], path = "../trust-dns/crates/client" }
+trust-dns-proto = { version = "0.18.0", features = ["mdns"], path = "../trust-dns/crates/proto" }
+tokio = "0.2.6"
