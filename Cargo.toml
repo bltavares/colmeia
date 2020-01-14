@@ -21,3 +21,5 @@ trust-dns-resolver = { version = "0.18.0", features = ["mdns", "tokio-runtime"]}
 trust-dns-client = { version = "0.18.0", features = ["mdns"]  }
 trust-dns-proto = { version = "0.18.0", features = ["mdns"] }
 tokio = "0.2.6"
+
+socket2 = { version = "0.3.11", features = ["reuseport"] }

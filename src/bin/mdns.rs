@@ -125,9 +125,9 @@ fn main() -> Error {
   let url = to_dns_discovery_key(&to_discovery_key(public_key)) + HOSTNAME;
 
   // mdns_lib(&url);
-  client_trustdns(&url);
+  // client_trustdns(&url);
   sync_trustdns(&url);
-  async_trustdns(&url);
+  // async_trustdns(&url);
 
   Ok(())
 }
