@@ -32,13 +32,23 @@ fn create_socket() -> Result<UdpSocket, io::Error> {
   socket.set_reuse_port(true)?;
   socket.join_multicast_v4(&IPV4_MULTICAST, &Ipv4Addr::UNSPECIFIED)?;
   bind_multicast(&socket, &dat_multicast)?;
-
   Ok(socket.into_udp_socket())
 }
 
 async fn go(socket: &UdpSocket, packet: &[u8]) -> Result<(), io::Error> {
   socket.send_to(&packet, SocketAddr::new(IPV4_MULTICAST.into(), 5353))?;
-  Ok(())
+  use trust_dns_proto::op::Message;
+
+  let mut buff = [0; 512];
+  loop {
+    if let Ok((_bytes, peer)) = socket.recv_from(&mut buff) {
+      dbg!(peer);
+      dbg!(_bytes);
+      if let Ok(message) = Message::from_vec(&buff[.._bytes]) {
+        dbg!(message);
+      }
+    }
+  }
 }
 
 fn name() -> String {
