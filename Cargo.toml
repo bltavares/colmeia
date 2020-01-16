@@ -17,9 +17,11 @@ protobuf = "=2.8.1"
 
 mdns = "0.3.1"
 
-trust-dns-resolver = { version = "0.18.0", features = ["mdns", "tokio-runtime"]}
-trust-dns-client = { version = "0.18.0", features = ["mdns"]  }
-trust-dns-proto = { version = "0.18.0", features = ["mdns"] }
-tokio = "0.2.6"
+trust-dns-resolver = { version = "0.19.0", features = ["mdns", "tokio-runtime"]}
+trust-dns-client = { version = "0.19.0", features = ["mdns"]  }
+trust-dns-proto = { version = "0.19.0", features = ["mdns"] }
+tokio = "0.2.9"
 
 socket2 = { version = "0.3.11", features = ["reuseport"] }
+futures = "0.3"
+pin-utils = "0.1.0-alpha.4"
