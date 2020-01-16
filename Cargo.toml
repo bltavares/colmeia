@@ -4,8 +4,13 @@ version = "0.1.0"
 authors = ["Bruno Tavares"]
 edition = "2018"
 
+[workspace]
+members = [
+  "colmeia-mdns"
+]
+
 [dependencies]
-async-std = "1.4.0"
+async-std = {version ="1.4.0", features = ["unstable"]}
 parse-dat-url = "0.1.0"
 ed25519-dalek = "0.9.1"
 blake2-rfc = "0.2.18"

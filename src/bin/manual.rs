@@ -81,33 +81,54 @@ pub async fn go_stream(
   }))
 }
 
-struct Locator {
-  socket: AsyncUdpSocket,
-  packet: Vec<u8>,
-  queried: std::cell::Cell<bool>,
+use futures::{Future, FutureExt};
+use std::cell::Cell;
+use std::pin::Pin;
+use std::sync::Arc;
+use std::task::{Context, Poll};
+pub struct Locator {
+  socket: Arc<AsyncUdpSocket>,
+  query_stream: Pin<Box<dyn futures::Stream<Item = std::io::Result<usize>>>>,
 }
 
-use futures::FutureExt;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use futures::stream::{self, StreamExt};
+#[must_use = "streams do nothing unless polled"]
+impl Locator {
+  //! Requires a bound socket
+  pub fn new(socket: AsyncUdpSocket, packet: Vec<u8>, duration: Duration) -> Self {
+    use async_std::stream::StreamExt as AsyncStreamExt;
+
+    let socket = Arc::new(socket);
+    let socket_handle = socket.clone();
+
+    let query_stream = stream::unfold((socket_handle, packet), |(socket, packet)| {
+      async move {
+        let bytes_writen = socket.send_to(&packet, *MULTICAST_DESTINATION).await;
+        Some((bytes_writen, (socket, packet)))
+      }
+    })
+    .throttle(duration)
+    .boxed();
+
+    Locator {
+      query_stream,
+      socket,
+    }
+  }
+}
+
 impl futures::Stream for Locator {
   type Item = std::io::Result<(Message, SocketAddr)>;
 
-  fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-    if !self.queried.get() {
-      self.queried.set(true);
-      let mut query_future = Box::pin(self.socket.send_to(&self.packet, *MULTICAST_DESTINATION));
-      if let Err(_) = futures::ready!(query_future.poll_unpin(cx)) {
-        self.queried.set(false);
-        return Poll::Pending;
-      };
-    }
+  fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+    drop(self.query_stream.poll_next_unpin(cx));
 
     let mut buff = [0; 512];
     let response = {
-      let mut read_future = Box::pin(self.socket.recv_from(&mut buff));
+      let mut read_future = self.socket.recv_from(&mut buff).boxed();
       futures::ready!(read_future.poll_unpin(cx))
     };
+
     if let Ok((bytes, peer)) = response {
       if let Ok(message) = Message::from_vec(&buff[..bytes]) {
         return Poll::Ready(Some(Ok((message, peer))));
@@ -168,13 +189,8 @@ fn main() {
   //   }
   // });
 
-  use async_std::stream::StreamExt;
   async_std::task::block_on(async {
-    let mut locator = Locator {
-      socket: socket.into(),
-      packet,
-      queried: std::cell::Cell::new(false),
-    };
+    let mut locator = Locator::new(socket.into(), packet, Duration::from_secs(10));
     while let Some(message) = locator.next().await {
       dbg!(message);
       dbg!("message received");
