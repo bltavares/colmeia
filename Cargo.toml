@@ -24,4 +24,4 @@ tokio = "0.2.9"
 
 socket2 = { version = "0.3.11", features = ["reuseport"] }
 futures = "0.3"
-pin-utils = "0.1.0-alpha.4"
+lazy_static = "1.4.0"

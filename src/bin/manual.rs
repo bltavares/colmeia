@@ -3,13 +3,14 @@ use std::io;
 use std::time::Duration;
 
 use async_std::net::UdpSocket as AsyncUdpSocket;
-use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use trust_dns_proto::op::Message;
 
-// const PORT: u16 = 7645;
 const IPV4_MULTICAST: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 251);
-const MULTICAST_DESTINATION: SocketAddr = SocketAddr::new(IPV4_MULTICAST.into(), 5353);
-const DAT_MULTICAST: SocketAddr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 5353);
+lazy_static::lazy_static! {
+  static ref MULTICAST_DESTINATION: SocketAddr = SocketAddr::new(IpAddr::V4(IPV4_MULTICAST), 5353);
+  static ref DAT_MULTICAST: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 5353);
+}
 
 /// On Windows, unlike all Unix variants, it is improper to bind to the multicast address
 ///
@@ -36,10 +37,11 @@ fn create_socket() -> Result<UdpSocket, io::Error> {
   Ok(socket.into_udp_socket())
 }
 
-async fn go(socket: UdpSocket, packet: &[u8]) -> Result<(), io::Error> {
+pub async fn go(socket: UdpSocket, packet: &[u8]) -> Result<(), io::Error> {
   let async_socket = async_std::net::UdpSocket::from(socket);
-  async_socket.send_to(&packet, MULTICAST_DESTINATION).await?;
-  use trust_dns_proto::op::Message;
+  async_socket
+    .send_to(&packet, *MULTICAST_DESTINATION)
+    .await?;
 
   let mut buff = [0; 512];
   loop {
@@ -53,12 +55,14 @@ async fn go(socket: UdpSocket, packet: &[u8]) -> Result<(), io::Error> {
   }
 }
 
-async fn go_stream(
+pub async fn go_stream(
   socket: UdpSocket,
   packet: &[u8],
 ) -> Result<impl futures::Stream<Item = Message>, io::Error> {
   let async_socket = async_std::net::UdpSocket::from(socket);
-  async_socket.send_to(&packet, MULTICAST_DESTINATION).await?;
+  async_socket
+    .send_to(&packet, *MULTICAST_DESTINATION)
+    .await?;
 
   Ok(futures::stream::unfold(async_socket, |socket| {
     async {
@@ -80,21 +84,35 @@ async fn go_stream(
 struct Locator {
   socket: AsyncUdpSocket,
   packet: Vec<u8>,
+  queried: std::cell::Cell<bool>,
 }
 
-use core::pin::Pin;
-use core::task::{Context, Poll};
+use futures::FutureExt;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 impl futures::Stream for Locator {
-  type Item = std::io::Result<Message>;
+  type Item = std::io::Result<(Message, SocketAddr)>;
 
-  // Trying to copy from the impl from async_std::net::Incoming
-  // Can't run poll
-  fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-    let query_future = self.socket.send_to(&self.packet, MULTICAST_DESTINATION);
-    pin_utils::pin_mut!(query_future);
-    // no method named `poll` found for type `std::pin::Pin<&mut impl core::future::future::Future>` in the current scope
-    // method not found in `std::pin::Pin<&mut impl core::future::future::Future>`
-    // let query_response = futures::ready!(query_future.poll(cx))?;
+  fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+    if !self.queried.get() {
+      self.queried.set(true);
+      let mut query_future = Box::pin(self.socket.send_to(&self.packet, *MULTICAST_DESTINATION));
+      if let Err(_) = futures::ready!(query_future.poll_unpin(cx)) {
+        self.queried.set(false);
+        return Poll::Pending;
+      };
+    }
+
+    let mut buff = [0; 512];
+    let response = {
+      let mut read_future = Box::pin(self.socket.recv_from(&mut buff));
+      futures::ready!(read_future.poll_unpin(cx))
+    };
+    if let Ok((bytes, peer)) = response {
+      if let Ok(message) = Message::from_vec(&buff[..bytes]) {
+        return Poll::Ready(Some(Ok((message, peer))));
+      }
+    }
 
     Poll::Pending
   }
@@ -109,7 +127,7 @@ fn name() -> String {
 fn packet(dat_url: &str) -> Vec<u8> {
   use std::str::FromStr;
   use trust_dns_client::serialize::binary::{BinEncodable, BinEncoder};
-  use trust_dns_proto::op::{Message, MessageType, Query};
+  use trust_dns_proto::op::{MessageType, Query};
   use trust_dns_proto::rr::{DNSClass, Name, RecordType};
 
   let name = Name::from_str(dat_url).expect("invalid DNS name");
@@ -149,4 +167,17 @@ fn main() {
   //     dbg!("message received");
   //   }
   // });
+
+  use async_std::stream::StreamExt;
+  async_std::task::block_on(async {
+    let mut locator = Locator {
+      socket: socket.into(),
+      packet,
+      queried: std::cell::Cell::new(false),
+    };
+    while let Some(message) = locator.next().await {
+      dbg!(message);
+      dbg!("message received");
+    }
+  });
 }
