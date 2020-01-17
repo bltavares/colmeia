@@ -1,6 +1,5 @@
 use async_std::net::UdpSocket as AsyncUdpSocket;
-use futures::stream::{self, StreamExt};
-use futures::FutureExt;
+use futures::stream;
 use socket2::{Domain, Protocol, Socket, Type};
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
@@ -9,6 +8,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use trust_dns_proto::op::Message;
+use trust_dns_proto::rr::RData::TXT;
 
 pub mod crypto;
 
@@ -64,9 +64,48 @@ fn packet(dat_url: &str) -> Vec<u8> {
     buffer
 }
 
-pub struct Locator {
+type MessageStream = (Message, SocketAddr);
+
+async fn read_dns_message(
     socket: Arc<AsyncUdpSocket>,
+) -> Option<(Option<MessageStream>, Arc<AsyncUdpSocket>)> {
+    let mut buff = [0; 512];
+    if let Ok((bytes, peer)) = socket.recv_from(&mut buff).await {
+        if let Ok(message) = Message::from_vec(&buff[..bytes]) {
+            return Some((Some((message, peer)), socket));
+        }
+    }
+    Some((None, socket))
+}
+
+fn select_location_response(
+    dat_url: &crypto::DatLocalDiscoverUrl,
+    response: Option<MessageStream>,
+) -> Option<SocketAddr> {
+    let response = response?;
+    let answer = response.0.answers().first()?;
+    if answer.name().to_lowercase().to_ascii() != dat_url.0 {
+        return None;
+    }
+    if let TXT(rdata) = answer.rdata() {
+        let peer_record = rdata
+            .txt_data()
+            .iter()
+            .flat_map(|payload| std::str::from_utf8(payload))
+            .find(|x| x.starts_with("peers=AAAAAA"))?;
+        let peer_info = peer_record.split_terminator("=").nth(1)?;
+        let peer_info = base64::decode(peer_info).ok()?;
+        let port = u16::from_be_bytes([*peer_info.get(4)?, *peer_info.get(5)?]);
+        let origin = response.1;
+
+        return Some(SocketAddr::new(origin.ip(), port));
+    }
+    None
+}
+
+pub struct Locator {
     query_stream: Pin<Box<dyn futures::Stream<Item = std::io::Result<usize>>>>,
+    listen_stream: Pin<Box<dyn futures::Stream<Item = SocketAddr>>>,
 }
 
 #[must_use = "streams do nothing unless polled"]
@@ -76,54 +115,45 @@ impl Locator {
         dat_url: crypto::DatLocalDiscoverUrl,
         duration: Duration,
     ) -> Self {
-        Self::shared_socket(socket.into(), dat_url, duration)
+        Self::shared_socket(Arc::new(socket.into()), dat_url, duration)
     }
 
     pub fn shared_socket(
-        socket: AsyncUdpSocket,
+        socket: Arc<AsyncUdpSocket>,
         dat_url: crypto::DatLocalDiscoverUrl,
         duration: Duration,
     ) -> Self {
         use async_std::stream::StreamExt as AsyncStreamExt;
 
-        let socket = Arc::new(socket);
         let socket_handle = socket.clone();
         let packet = packet(&dat_url.0);
 
         let query_stream = stream::unfold((socket_handle, packet), |(socket, packet)| {
-            async move {
+            async {
                 let bytes_writen = socket.send_to(&packet, *MULTICAST_DESTINATION).await;
                 Some((bytes_writen, (socket, packet)))
             }
         })
-        .throttle(duration)
-        .boxed();
+        .throttle(duration);
+
+        let socket_handle = socket.clone();
+        let listen_stream = stream::unfold(socket_handle, read_dns_message)
+            .filter_map(move |message| select_location_response(&dat_url, message));
 
         Locator {
-            query_stream,
-            socket,
+            query_stream: Box::pin(query_stream),
+            listen_stream: Box::pin(listen_stream),
         }
     }
 }
 
 impl futures::Stream for Locator {
-    type Item = std::io::Result<(Message, SocketAddr)>;
+    type Item = SocketAddr;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        use futures::stream::StreamExt;
+
         drop(self.query_stream.poll_next_unpin(cx));
-
-        let mut buff = [0; 512];
-        let response = {
-            let mut read_future = self.socket.recv_from(&mut buff).boxed();
-            futures::ready!(read_future.poll_unpin(cx))
-        };
-
-        if let Ok((bytes, peer)) = response {
-            if let Ok(message) = Message::from_vec(&buff[..bytes]) {
-                return Poll::Ready(Some(Ok((message, peer))));
-            }
-        }
-
-        Poll::Pending
+        self.listen_stream.poll_next_unpin(cx)
     }
 }

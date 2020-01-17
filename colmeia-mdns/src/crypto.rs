@@ -3,7 +3,7 @@ use ed25519_dalek::PublicKey;
 
 const HYPERCORE: [u8; 9] = *b"hypercore";
 
-const HOSTNAME: &str = ".dat.local";
+const HOSTNAME: &str = ".dat.local.";
 
 fn to_discovery_key(public_key: PublicKey) -> Vec<u8> {
   let mut hasher = Blake2b::with_key(32, public_key.as_bytes());
