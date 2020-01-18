@@ -103,8 +103,8 @@ fn select_location_response(
             .txt_data()
             .iter()
             .flat_map(|payload| std::str::from_utf8(payload))
-            .find(|x| x.starts_with("peers=AAAAAA"))?;
-        let peer_info = peer_record.split_terminator("=").nth(1)?;
+            .find(|x| x.starts_with("peers="))?;
+        let peer_info = peer_record.split_terminator('=').nth(1)?;
         let peer_info = base64::decode(peer_info).ok()?;
         let port = u16::from_be_bytes([*peer_info.get(4)?, *peer_info.get(5)?]);
         let origin = response.1;
