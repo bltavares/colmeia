@@ -83,6 +83,7 @@ async fn read_dns_message(
     let mut buff = [0; 512];
     if let Ok((bytes, peer)) = socket.recv_from(&mut buff).await {
         if let Ok(message) = Message::from_vec(&buff[..bytes]) {
+            log::debug!("MDNS message received");
             return Some((Some((message, peer)), socket));
         }
     }
@@ -142,6 +143,7 @@ impl Locator {
         let query_stream = stream::unfold((socket_handle, packet), |(socket, packet)| {
             async {
                 let bytes_writen = socket.send_to(&packet, *MULTICAST_DESTINATION).await;
+                log::debug!("MDNS query sent");
                 Some((bytes_writen, (socket, packet)))
             }
         })
