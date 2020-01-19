@@ -1,0 +1,24 @@
+[package]
+name = 'colmeia-mdns'
+version = '0.1.0'
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
+edition = '2018'
+
+[dependencies]
+blake2-rfc = '0.2.18'
+ed25519-dalek = '1.0.0-pre.3'
+futures = '0.3'
+hex = '0.4.0'
+lazy_static = '1.4.0'
+parse-dat-url = '0.1.0'
+trust-dns-proto = '0.19.2'
+base64 = '0.11.0'
+log = '0.4.8'
+
+[dependencies.async-std]
+version = '1.4.0'
+features = ['unstable']
+
+[dependencies.socket2]
+version = '0.3.11'
+features = ['reuseport']

@@ -1,23 +1,19 @@
 [package]
-name = "colmeia"
-version = "0.1.0"
-authors = ["Bruno Tavares"]
-edition = "2018"
+name = 'colmeia'
+version = '0.1.0'
+authors = ['Bruno Tavares']
+edition = '2018'
+
+[workspace]
+members = ['colmeia-mdns']
 
 [dependencies]
-async-std = "1.4.0"
-parse-dat-url = "0.1.0"
-ed25519-dalek = "0.9.1"
-blake2-rfc = "0.2.18"
-hex = "0.4.0"
-env_logger = "0.7.1"
+futures = '0.3'
+env_logger = '0.7.1'
 
-libp2p = { version = "0.13.1", git = "https://github.com/tomaka/libp2p-rs", branch = "merge-master" }
-protobuf = "=2.8.1"
+[dependencies.colmeia-mdns]
+path = './colmeia-mdns'
 
-mdns = "0.3.1"
-
-trust-dns-resolver = { version = "0.18.0", features = ["mdns", "tokio-runtime"]}
-trust-dns-client = { version = "0.18.0", features = ["mdns"]  }
-trust-dns-proto = { version = "0.18.0", features = ["mdns"] }
-tokio = "0.2.6"
+[dependencies.async-std]
+version = '1.4.0'
+features = ['unstable']
