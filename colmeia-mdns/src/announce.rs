@@ -4,6 +4,7 @@ use std::net::{SocketAddr, UdpSocket};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use trust_dns_proto::op::MessageType;
 
 use crate::crypto;
 use crate::socket;
@@ -14,17 +15,19 @@ fn dat_origin_request(
 ) -> Option<SocketAddr> {
   let item = item?;
   let query = item.0.queries().first()?;
-  if query.name().to_lowercase().to_ascii() != dat_url.0 {
-    return None;
+  if item.0.message_type() == MessageType::Query
+    && query.name().to_lowercase().to_ascii() == dat_url.0
+  {
+    let origin = item.1;
+    log::debug!("MDNS query originated {:#}", origin);
+    return Some(origin);
   }
-  let origin = item.1;
-  log::debug!("MDNS query originated {:#}", origin);
-  Some(origin)
+  None
 }
 
 fn packet(dat_url: &str) -> Vec<u8> {
   use std::str::FromStr;
-  use trust_dns_proto::op::{Message, MessageType, Query};
+  use trust_dns_proto::op::{Message, Query};
   use trust_dns_proto::rr::rdata::TXT;
   use trust_dns_proto::rr::{Name, RData, Record, RecordType};
   use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
