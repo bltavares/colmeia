@@ -33,7 +33,10 @@ fn packet(dat_url: &str) -> Vec<u8> {
   let query = Query::query(name, RecordType::TXT);
 
   let name = Name::from_str(dat_url).expect("invalid DNS name");
-  let txt = TXT::new(vec!["token=asfdasfasf".into(), "peers=AAAAAAzS".into()]);
+  let txt = TXT::new(vec![
+    "token=asfdasfasf".into(), // TODO: Pass random value
+    "peers=AAAAAAzS".into(),   // TODO: Pass port
+  ]);
   let record = Record::from_rdata(name, 0, RData::TXT(txt));
   let mut message = Message::new();
   message
