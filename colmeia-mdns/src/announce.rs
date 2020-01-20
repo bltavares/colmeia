@@ -77,7 +77,7 @@ impl Announcer {
       }
     });
 
-    let listen_stream = stream::unfold(socket.clone(), socket::read_dns_message)
+    let listen_stream = stream::unfold(socket, socket::read_dns_message)
       .filter_map(move |message| futures::future::ready(dat_origin_request(&dat_url, message)))
       .zip(response_stream)
       .map(|(_, _)| ());
