@@ -116,8 +116,8 @@ fn select_location_response(
 }
 
 pub struct Locator {
-    query_stream: Pin<Box<dyn futures::Stream<Item = std::io::Result<usize>>>>,
-    listen_stream: Pin<Box<dyn futures::Stream<Item = SocketAddr>>>,
+    query_stream: Pin<Box<dyn futures::Stream<Item = std::io::Result<usize>> + Send>>,
+    listen_stream: Pin<Box<dyn futures::Stream<Item = SocketAddr> + Send>>,
 }
 
 #[must_use = "streams do nothing unless polled"]
@@ -130,7 +130,7 @@ impl Locator {
         Self::shared_socket(Arc::new(socket.into()), dat_url, duration)
     }
 
-    pub fn shared_socket(
+    fn shared_socket(
         socket: Arc<AsyncUdpSocket>,
         dat_url: crypto::DatLocalDiscoverUrl,
         duration: Duration,
@@ -149,8 +149,7 @@ impl Locator {
         })
         .throttle(duration);
 
-        let socket_handle = socket.clone();
-        let listen_stream = stream::unfold(socket_handle, read_dns_message)
+        let listen_stream = stream::unfold(socket, read_dns_message)
             .filter_map(move |message| select_location_response(&dat_url, message));
 
         Locator {
@@ -167,6 +166,44 @@ impl futures::Stream for Locator {
         use futures::stream::StreamExt;
 
         drop(self.query_stream.poll_next_unpin(cx));
+        self.listen_stream.poll_next_unpin(cx)
+    }
+}
+
+fn annouce_dat(
+    dat_url: &crypto::DatLocalDiscoverUrl,
+    response: Option<MessageStream>,
+) -> Option<SocketAddr> {
+    None
+}
+
+pub struct Announcer {
+    listen_stream: Pin<Box<dyn futures::Stream<Item = SocketAddr> + Send>>,
+}
+
+impl Announcer {
+    pub fn new(socket: UdpSocket, dat_url: crypto::DatLocalDiscoverUrl) -> Self {
+        Announcer::shared_socket(Arc::new(socket.into()), dat_url)
+    }
+
+    fn shared_socket(socket: Arc<AsyncUdpSocket>, dat_url: crypto::DatLocalDiscoverUrl) -> Self {
+        use async_std::stream::StreamExt as AsyncStreamExt;
+
+        let listen_stream = stream::unfold(socket.clone(), read_dns_message)
+            .filter_map(move |message| annouce_dat(&dat_url, message));
+
+        Announcer {
+            listen_stream: Box::pin(listen_stream),
+        }
+    }
+}
+
+impl futures::Stream for Announcer {
+    type Item = SocketAddr;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        use futures::stream::StreamExt;
+
         self.listen_stream.poll_next_unpin(cx)
     }
 }
