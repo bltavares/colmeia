@@ -15,6 +15,7 @@ fn to_dns_discovery_key(discovery_key: &[u8]) -> String {
   hex::encode(discovery_key).chars().take(40).collect()
 }
 
+#[derive(Clone)]
 pub struct DatLocalDiscoverUrl(pub(crate) String);
 
 // TODO: Create a error type
