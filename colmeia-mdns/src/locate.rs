@@ -91,7 +91,7 @@ impl Locator {
     let listen_stream = stream::unfold(socket, socket::read_dns_message)
       .filter_map(move |message| select_location_response(&dat_url, message));
 
-    Locator {
+    Self {
       query_stream: Box::pin(query_stream),
       listen_stream: Box::pin(listen_stream),
     }

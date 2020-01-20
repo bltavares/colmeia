@@ -60,7 +60,7 @@ pub struct Announcer {
 
 impl Announcer {
   pub fn new(socket: UdpSocket, dat_url: crypto::DatLocalDiscoverUrl) -> Self {
-    Announcer::shared_socket(Arc::new(socket.into()), dat_url)
+    Self::shared_socket(Arc::new(socket.into()), dat_url)
   }
 
   fn shared_socket(socket: Arc<AsyncUdpSocket>, dat_url: crypto::DatLocalDiscoverUrl) -> Self {
@@ -82,7 +82,7 @@ impl Announcer {
       .zip(response_stream)
       .map(|(_, _)| ());
 
-    Announcer {
+    Self {
       listen_stream: Box::pin(listen_stream),
     }
   }

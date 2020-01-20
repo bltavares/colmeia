@@ -38,7 +38,7 @@ fn reuse_port(_socket: &Socket) -> io::Result<()> {
   Ok(())
 }
 
-pub fn shared_socket() -> Result<UdpSocket, io::Error> {
+pub fn create_shared() -> Result<UdpSocket, io::Error> {
   let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
   socket.set_read_timeout(Some(Duration::from_millis(100)))?;
   socket.set_reuse_address(true)?;

@@ -21,7 +21,7 @@ fn main() {
   async_std::task::block_on(async {
     let discovery = async_std::task::spawn(async {
       let mut locator = Locator::new(
-        colmeia_mdns::socket::shared_socket().expect("socket creation failed"),
+        colmeia_mdns::socket::create_shared().expect("socket creation failed"),
         url_name,
         Duration::from_secs(10),
       );
@@ -32,7 +32,7 @@ fn main() {
 
     let announcement = async_std::task::spawn(async {
       let mut announcer = Announcer::new(
-        colmeia_mdns::socket::shared_socket().expect("socket creation failed"),
+        colmeia_mdns::socket::create_shared().expect("socket creation failed"),
         url_name_announce,
       );
       while let Some(message) = announcer.next().await {
