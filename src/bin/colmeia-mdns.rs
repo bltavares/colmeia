@@ -1,6 +1,4 @@
-use async_std::prelude::FutureExt;
-use colmeia_mdns::announce::Announcer;
-use colmeia_mdns::locate::Locator;
+use colmeia_mdns::Mdns;
 use futures::stream::StreamExt;
 use std::time::Duration;
 
@@ -13,33 +11,15 @@ fn main() {
   env_logger::init();
 
   let name = name();
-  let url_name = colmeia_mdns::crypto::dat_url_mdns_discovery_name(&name)
-    .expect("cold not convert to dat local url");
-
-  let url_name_announce = url_name.clone();
 
   async_std::task::block_on(async {
-    let discovery = async_std::task::spawn(async {
-      let mut locator = Locator::new(
-        colmeia_mdns::socket::create_shared().expect("socket creation failed"),
-        url_name,
-        Duration::from_secs(10),
-      );
-      while let Some(message) = locator.next().await {
-        println!("dat found on: {:?}", message);
-      }
-    });
+    let mut mdns = Mdns::new(&name).expect("could not parse DAT");
+    mdns
+      .with_announcer(3282)
+      .with_location(Duration::from_secs(10));
 
-    let announcement = async_std::task::spawn(async {
-      let mut announcer = Announcer::new(
-        colmeia_mdns::socket::create_shared().expect("socket creation failed"),
-        url_name_announce,
-      );
-      while let Some(message) = announcer.next().await {
-        println!("dat found on: {:?}", message);
-      }
-    });
-
-    discovery.join(announcement).await;
-  });
+    while let Some(peer) = mdns.next().await {
+      println!("Peer found {:?}", peer);
+    }
+  })
 }

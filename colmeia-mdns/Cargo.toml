@@ -14,6 +14,7 @@ parse-dat-url = '0.1.0'
 trust-dns-proto = '0.19.2'
 base64 = '0.11.0'
 log = '0.4.8'
+rand = '0.7.3'
 
 [dependencies.async-std]
 version = '1.4.0'

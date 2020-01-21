@@ -25,7 +25,8 @@ fn dat_origin_request(
   None
 }
 
-fn packet(dat_url: &str) -> Vec<u8> {
+fn packet(dat_url: &str, port: u16) -> Vec<u8> {
+  use rand::Rng;
   use std::str::FromStr;
   use trust_dns_proto::op::{Message, Query};
   use trust_dns_proto::rr::rdata::TXT;
@@ -36,9 +37,15 @@ fn packet(dat_url: &str) -> Vec<u8> {
   let query = Query::query(name, RecordType::TXT);
 
   let name = Name::from_str(dat_url).expect("invalid DNS name");
+  let token: [u8; 32] = rand::thread_rng().gen();
+  let peers: Vec<u8> = [0_u8; 4]
+    .iter()
+    .chain(&port.to_be_bytes())
+    .copied()
+    .collect();
   let txt = TXT::new(vec![
-    "token=asfdasfasf".into(), // TODO: Pass random value
-    "peers=AAAAAAzS".into(),   // TODO: Pass port
+    "token=".to_owned() + &base64::encode(&token),
+    "peers=".to_owned() + &base64::encode(&peers),
   ]);
   let record = Record::from_rdata(name, 0, RData::TXT(txt));
   let mut message = Message::new();
@@ -59,12 +66,16 @@ pub struct Announcer {
 }
 
 impl Announcer {
-  pub fn new(socket: UdpSocket, dat_url: crypto::DatLocalDiscoverUrl) -> Self {
-    Self::shared_socket(Arc::new(socket.into()), dat_url)
+  pub fn new(socket: UdpSocket, dat_url: crypto::DatLocalDiscoverUrl, port: u16) -> Self {
+    Self::shared_socket(Arc::new(socket.into()), dat_url, port)
   }
 
-  fn shared_socket(socket: Arc<AsyncUdpSocket>, dat_url: crypto::DatLocalDiscoverUrl) -> Self {
-    let packet = packet(&dat_url.0);
+  fn shared_socket(
+    socket: Arc<AsyncUdpSocket>,
+    dat_url: crypto::DatLocalDiscoverUrl,
+    port: u16,
+  ) -> Self {
+    let packet = packet(&dat_url.0, port);
 
     let response_stream = stream::unfold((socket.clone(), packet), |(socket, packet)| {
       async {
