@@ -3,12 +3,14 @@
 ----
 Hive (in portuguese). Attempt to make an interop layer to connect to [dat](https://github.com/datrs/) on [hyperswarm](https://github.com/hyperswarm) and legacy infra as well.
 
-- [x] `colmeia-mdns`
+- [x] `colmeia-mdns` - compat with `npm i -g dat`
   - [x] `Locator`: stream to find dat members in the network
-  - [ ] `Announcer`: stream that announces a dat in the network
-  - [ ] `Mdns`: announces and find dat in the network
+  - [x] `Announcer`: stream that announces a dat in the network
+  - [x] `Mdns`: announces and find dat in the network
+  - [ ] Add support to hyperswarm dns
 - [ ] `colmeia-dht`: Interop with hypwerswarm dht infrastructure
 - [ ] `colmeia-dns`: DNS locator to resolve a hostname into a dat hash
+- [ ] `colmeia-resolve`: converts a `.well-known/dat`  or DNS TXT [into a hash](https://beakerbrowser.com/docs/guides/use-a-domain-name-with-dat) 
 - [ ] `colmeia-network`: Network pool manager, based on mdns and dht members
 
 ## Utils
