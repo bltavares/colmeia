@@ -1,0 +1,14 @@
+[package]
+name = 'colmeia-proto'
+version = '0.1.0'
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
+edition = '2018'
+
+[dependencies]
+varinteger = '1.0.6'
+futures = '0.3'
+log = '0.4.8'
+
+[dependencies.async-std]
+version = '1.4.0'
+features = ['unstable']

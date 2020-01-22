@@ -5,7 +5,10 @@ authors = ['Bruno Tavares']
 edition = '2018'
 
 [workspace]
-members = ['colmeia-mdns']
+members = [
+    'colmeia-mdns',
+    'colmeia-proto',
+]
 
 [dependencies]
 futures = '0.3'
@@ -13,6 +16,9 @@ env_logger = '0.7.1'
 
 [dependencies.colmeia-mdns]
 path = './colmeia-mdns'
+
+[dependencies.colmeia-proto]
+path = './colmeia-proto'
 
 [dependencies.async-std]
 version = '1.4.0'
