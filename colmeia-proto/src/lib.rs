@@ -7,7 +7,6 @@ use std::task::{Context, Poll};
 
 #[derive(Debug)]
 struct Header {
-    length: u64,
     channel: u16,
     msg_type: u8,
 }
@@ -30,7 +29,7 @@ pub struct DatReader {
 
 async fn read_varint(
     mut socket: impl stream::Stream<Item = std::io::Result<u8>> + Unpin,
-) -> Option<u64> {
+) -> Option<(u64, usize)> {
     let mut buffer = Vec::with_capacity(10);
     let mut decoded = 0;
     while let Some(byte) = socket.next().await {
@@ -40,22 +39,25 @@ async fn read_varint(
             break;
         }
     }
-    let _ = varinteger::decode(&buffer, &mut decoded);
-    Some(decoded)
+    if buffer.is_empty() {
+        return None;
+    }
+    let bytes_read = varinteger::decode(dbg!(&buffer), &mut decoded);
+    Some((decoded, bytes_read))
 }
 
 impl DatReader {
     pub fn new(socket: TcpStream) -> Self {
         let listener = stream::unfold(socket.bytes(), |mut socket| {
             async {
-                let length = read_varint(&mut socket).await?;
+                let (length, _) = read_varint(&mut socket).await?;
 
                 // PING
                 if length == 0 {
                     return Some((None, socket));
                 }
 
-                let msg_chan_type = read_varint(&mut socket).await?;
+                let (msg_chan_type, bytes_used) = read_varint(&mut socket).await?;
                 log::debug!("Length to read {:?}", length);
                 log::debug!("Encoded channel-type {:?}", msg_chan_type);
 
@@ -65,19 +67,17 @@ impl DatReader {
                 log::debug!("Msg channel {:?}", channel);
                 log::debug!("Msg type {:?}", msg_type);
 
-                let mut body = Vec::with_capacity(length as usize);
-                for _ in 0..length {
+                let message_size = length as usize - dbg!(bytes_used);
+
+                let mut body = Vec::with_capacity(message_size);
+                for _ in dbg!(0..message_size) {
                     if let Some(byte) = socket.next().await {
                         body.push(byte.ok()?);
                     }
                 }
 
                 let message = Message {
-                    header: Header {
-                        length,
-                        channel,
-                        msg_type,
-                    },
+                    header: Header { channel, msg_type },
                     body,
                 };
 
