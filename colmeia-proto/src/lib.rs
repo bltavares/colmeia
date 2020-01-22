@@ -18,29 +18,44 @@ pub struct Message {
     body: Vec<u8>,
 }
 
+impl Message {
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+}
+
 pub struct DatReader {
     listener: Pin<Box<dyn stream::Stream<Item = Message> + Send>>,
 }
 
-async fn read_varint(mut socket: impl stream::Stream<Item = u8> + Unpin) -> u64 {
+async fn read_varint(
+    mut socket: impl stream::Stream<Item = std::io::Result<u8>> + Unpin,
+) -> Option<u64> {
     let mut buffer = Vec::with_capacity(10);
     let mut decoded = 0;
     while let Some(byte) = socket.next().await {
+        let byte = byte.ok()?;
         buffer.push(byte);
         if (byte & 0b10000000) == 0 {
             break;
         }
     }
     let _ = varinteger::decode(&buffer, &mut decoded);
-    decoded
+    Some(decoded)
 }
 
 impl DatReader {
     pub fn new(socket: TcpStream) -> Self {
-        let listener = stream::unfold(socket.bytes().filter_map(Result::ok), |mut socket| {
+        let listener = stream::unfold(socket.bytes(), |mut socket| {
             async {
-                let length = read_varint(&mut socket).await;
-                let msg_chan_type = read_varint(&mut socket).await;
+                let length = read_varint(&mut socket).await?;
+
+                // PING
+                if length == 0 {
+                    return Some((None, socket));
+                }
+
+                let msg_chan_type = read_varint(&mut socket).await?;
                 log::debug!("Length to read {:?}", length);
                 log::debug!("Encoded channel-type {:?}", msg_chan_type);
 
@@ -53,7 +68,7 @@ impl DatReader {
                 let mut body = Vec::with_capacity(length as usize);
                 for _ in 0..length {
                     if let Some(byte) = socket.next().await {
-                        body.push(byte);
+                        body.push(byte.ok()?);
                     }
                 }
 
@@ -66,9 +81,10 @@ impl DatReader {
                     body,
                 };
 
-                Some((message, socket))
+                Some((Some(message), socket))
             }
-        });
+        })
+        .filter_map(|m| m);
 
         Self {
             listener: Box::pin(listener),

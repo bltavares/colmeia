@@ -25,6 +25,7 @@ fn main() {
 
     while let Some(message) = client.next().await {
       println!("{:?}", message);
+      println!("{:?}", message.body().len());
     }
   });
 }
