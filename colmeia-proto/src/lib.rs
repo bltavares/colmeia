@@ -5,52 +5,68 @@ use futures::stream;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[derive(Debug)]
 struct Header {
-    length: usize,
+    length: u64,
     channel: u16,
     msg_type: u8,
 }
 
-struct Message {
+#[derive(Debug)]
+pub struct Message {
     header: Header,
     body: Vec<u8>,
 }
 
 pub struct DatReader {
-    listener: Pin<Box<dyn stream::Stream<Item = ()> + Send>>,
+    listener: Pin<Box<dyn stream::Stream<Item = Message> + Send>>,
+}
+
+async fn read_varint(mut socket: impl stream::Stream<Item = u8> + Unpin) -> u64 {
+    let mut buffer = Vec::with_capacity(10);
+    let mut decoded = 0;
+    while let Some(byte) = socket.next().await {
+        buffer.push(byte);
+        if (byte & 0b10000000) == 0 {
+            break;
+        }
+    }
+    let _ = varinteger::decode(&buffer, &mut decoded);
+    decoded
 }
 
 impl DatReader {
     pub fn new(socket: TcpStream) -> Self {
         let listener = stream::unfold(socket.bytes().filter_map(Result::ok), |mut socket| {
             async {
-                let mut length = Vec::with_capacity(20);
-                let mut length_decoded = 0;
-                let mut msg_type = 0;
+                let length = read_varint(&mut socket).await;
+                let msg_chan_type = read_varint(&mut socket).await;
+                log::debug!("Length to read {:?}", length);
+                log::debug!("Encoded channel-type {:?}", msg_chan_type);
 
-                while let Some(byte) = socket.next().await {
-                    length.push(byte);
-                    if (byte & 0xF0) == 0 {
-                        break;
-                    }
-                }
+                let channel = (msg_chan_type >> 4) as u16;
+                let msg_type = (msg_chan_type & 0b1111) as u8;
 
-                let remaining = varinteger::decode(&length, &mut length_decoded);
-                varinteger::decode(&length[remaining..], &mut msg_type);
-
-                log::debug!("Length to read {:?}", length_decoded);
+                log::debug!("Msg channel {:?}", channel);
                 log::debug!("Msg type {:?}", msg_type);
 
-                let mut body = Vec::with_capacity(length_decoded as usize);
-                for _ in 0..length_decoded {
+                let mut body = Vec::with_capacity(length as usize);
+                for _ in 0..length {
                     if let Some(byte) = socket.next().await {
                         body.push(byte);
                     }
                 }
 
-                dbg!(body);
+                let message = Message {
+                    header: Header {
+                        length,
+                        channel,
+                        msg_type,
+                    },
+                    body,
+                };
 
-                Some(((), socket))
+                Some((message, socket))
             }
         });
 
@@ -61,7 +77,7 @@ impl DatReader {
 }
 
 impl stream::Stream for DatReader {
-    type Item = ();
+    type Item = Message;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         use futures::stream::StreamExt;

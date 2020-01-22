@@ -21,8 +21,7 @@ fn main() {
       TcpStream::connect(socket)
         .await
         .expect("could not open socket"),
-    )
-    .take(1);
+    );
 
     while let Some(message) = client.next().await {
       println!("{:?}", message);
