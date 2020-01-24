@@ -1,6 +1,6 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use colmeia_proto::DatReader;
+use colmeia_proto::*;
 use std::net::SocketAddr;
 
 fn address() -> SocketAddr {
@@ -17,15 +17,14 @@ fn main() {
   let socket = address();
 
   async_std::task::block_on(async {
-    let mut client = DatReader::new(
+    let mut client = Reader::new(
       TcpStream::connect(socket)
         .await
         .expect("could not open socket"),
     );
 
-    while let Some(message) = client.next().await {
-      println!("{:?}", message);
-      println!("{:?}", message.body().len());
+    while let Some(Ok(message)) = client.next().await {
+      println!("{:?}", message.parse().expect("parsed message"));
     }
   });
 }

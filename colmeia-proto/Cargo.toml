@@ -8,6 +8,14 @@ edition = '2018'
 varinteger = '1.0.6'
 futures = '0.3'
 log = '0.4.8'
+simple-message-channels = '0.0.2'
+protobuf = '=2.10.1'
+
+[dependencies.dat-network-protocol]
+version = '1.0.0'
+# path = '../../datrs/dat-network-protocol'
+git = 'https://github.com/bltavares/dat-network-protocol'
+branch = 'update-schema'
 
 [dependencies.async-std]
 version = '1.4.0'
