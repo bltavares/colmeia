@@ -19,14 +19,15 @@ fn dns_discovery_key(discovery_key: &[u8]) -> String {
 }
 
 #[derive(Debug, Clone)]
-pub struct HashUrl {
+pub struct HashUrl<'a> {
     public_key: PublicKey,
     discovery_key: Vec<u8>,
     local_dns_domain: String,
+    original: DatUrl<'a>,
 }
 
 pub enum DatUrlResolution<'a> {
-    HashUrl(HashUrl),
+    HashUrl(HashUrl<'a>),
     RemoteUrl(DatUrl<'a>),
 }
 
@@ -45,11 +46,11 @@ pub fn parse<'a>(dat_name: &'a str) -> Result<DatUrlResolution<'a>, Error> {
         Err(_) => return Ok(DatUrlResolution::RemoteUrl(dat_url)),
     };
 
-    Ok(DatUrlResolution::HashUrl(HashUrl::new(public_key)))
+    Ok(DatUrlResolution::HashUrl(HashUrl::new(public_key, dat_url)))
 }
 
-impl HashUrl {
-    pub fn new(public_key: PublicKey) -> Self {
+impl<'a> HashUrl<'a> {
+    fn new(public_key: PublicKey, original: DatUrl<'a>) -> Self {
         let discovery_key = discovery_key(&public_key);
         let local_dns_domain = dns_discovery_key(&discovery_key) + HOSTNAME;
 
@@ -57,6 +58,7 @@ impl HashUrl {
             public_key,
             local_dns_domain,
             discovery_key,
+            original,
         }
     }
 
