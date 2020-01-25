@@ -1,24 +1,24 @@
 [package]
 name = 'colmeia'
 version = '0.1.0'
-authors = ['Bruno Tavares']
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
 
 [workspace]
 members = [
-    'colmeia-mdns',
-    'colmeia-proto',
+    'colmeia-dat-mdns',
+    'colmeia-dat-proto',
 ]
 
 [dependencies]
 futures = '0.3'
 env_logger = '0.7.1'
 
-[dependencies.colmeia-mdns]
-path = './colmeia-mdns'
+[dependencies.colmeia-dat-mdns]
+path = './colmeia-dat-mdns'
 
-[dependencies.colmeia-proto]
-path = './colmeia-proto'
+[dependencies.colmeia-dat-proto]
+path = './colmeia-dat-proto'
 
 [dependencies.async-std]
 version = '1.4.0'

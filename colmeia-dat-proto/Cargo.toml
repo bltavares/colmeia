@@ -1,5 +1,5 @@
 [package]
-name = 'colmeia-proto'
+name = 'colmeia-dat-proto'
 version = '0.1.0'
 authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
@@ -13,7 +13,6 @@ protobuf = '=2.10.1'
 
 [dependencies.dat-network-protocol]
 version = '1.0.0'
-# path = '../../datrs/dat-network-protocol'
 git = 'https://github.com/bltavares/dat-network-protocol'
 branch = 'update-schema'
 

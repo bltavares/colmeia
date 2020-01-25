@@ -200,14 +200,14 @@ name = "colmeia"
 version = "0.1.0"
 dependencies = [
  "async-std 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "colmeia-mdns 0.1.0",
- "colmeia-proto 0.1.0",
+ "colmeia-dat-mdns 0.1.0",
+ "colmeia-dat-proto 0.1.0",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "colmeia-mdns"
+name = "colmeia-dat-mdns"
 version = "0.1.0"
 dependencies = [
  "async-std 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -225,7 +225,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "colmeia-proto"
+name = "colmeia-dat-proto"
 version = "0.1.0"
 dependencies = [
  "async-std 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",

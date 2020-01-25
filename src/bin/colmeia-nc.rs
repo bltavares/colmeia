@@ -1,6 +1,6 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use colmeia_proto::*;
+use colmeia_dat_proto::*;
 use std::net::SocketAddr;
 
 fn address() -> SocketAddr {

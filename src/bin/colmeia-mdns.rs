@@ -1,4 +1,4 @@
-use colmeia_mdns::Mdns;
+use colmeia_dat_mdns::Mdns;
 use futures::stream::StreamExt;
 use std::time::Duration;
 
