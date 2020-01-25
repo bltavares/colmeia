@@ -8,6 +8,7 @@ edition = '2018'
 members = [
     'colmeia-dat-mdns',
     'colmeia-dat-proto',
+    'colmeia-dat-core',
 ]
 
 [dependencies]
@@ -23,3 +24,6 @@ path = './colmeia-dat-proto'
 [dependencies.async-std]
 version = '1.4.0'
 features = ['unstable']
+
+[dependencies.colmeia-dat-core]
+path = './colmeia-dat-core'

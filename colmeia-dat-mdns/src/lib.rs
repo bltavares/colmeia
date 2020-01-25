@@ -4,25 +4,30 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
+use colmeia_dat_core as core;
+
 pub mod announce;
-pub mod crypto;
 pub mod locate;
 pub mod socket;
 
 pub struct Mdns {
-  dat_url: crypto::DatLocalDiscoverUrl,
+  dat_url: core::HashUrl,
   announce: Option<announce::Announcer>,
   locate: Option<locate::Locator>,
 }
 
 impl Mdns {
-  pub fn new(dat_url: &str) -> Result<Self, parse_dat_url::Error> {
-    let url_name = crypto::dat_url_mdns_discovery_name(&dat_url)?;
-    Ok(Self {
-      dat_url: url_name,
-      announce: None,
-      locate: None,
-    })
+  pub fn new(dat_url: &str) -> Result<Self, core::Error> {
+    let url_name = core::parse(&dat_url)?;
+    if let core::DatUrlResolution::HashUrl(dat_url) = url_name {
+      return Ok(Self {
+        dat_url,
+        announce: None,
+        locate: None,
+      });
+    }
+
+    Err(core::Error::MissingHostname) // TODO appropriate error
   }
 
   pub fn with_location(&mut self, duration: Duration) -> &mut Self {

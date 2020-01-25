@@ -8,8 +8,8 @@ use std::time::Duration;
 use trust_dns_proto::op::Message;
 use trust_dns_proto::rr::RData::TXT;
 
-use crate::crypto;
 use crate::socket;
+use colmeia_dat_core as core;
 
 fn packet(dat_url: &str) -> Vec<u8> {
   use std::str::FromStr;
@@ -32,12 +32,12 @@ fn packet(dat_url: &str) -> Vec<u8> {
 }
 
 fn select_location_response(
-  dat_url: &crypto::DatLocalDiscoverUrl,
+  dat_url: &core::HashUrl,
   response: Option<socket::MessageStream>,
 ) -> Option<SocketAddr> {
   let response = response?;
   let answer = response.0.answers().first()?;
-  if answer.name().to_lowercase().to_ascii() != dat_url.0 {
+  if answer.name().to_lowercase().to_ascii() != dat_url.local_dns_domain() {
     return None;
   }
   if let TXT(rdata) = answer.rdata() {
@@ -63,19 +63,19 @@ pub struct Locator {
 
 #[must_use = "streams do nothing unless polled"]
 impl Locator {
-  pub fn new(socket: UdpSocket, dat_url: crypto::DatLocalDiscoverUrl, duration: Duration) -> Self {
+  pub fn new(socket: UdpSocket, dat_url: core::HashUrl, duration: Duration) -> Self {
     Self::shared_socket(Arc::new(socket.into()), dat_url, duration)
   }
 
   fn shared_socket(
     socket: Arc<AsyncUdpSocket>,
-    dat_url: crypto::DatLocalDiscoverUrl,
+    dat_url: core::HashUrl,
     duration: Duration,
   ) -> Self {
     use async_std::stream::StreamExt as AsyncStreamExt;
 
     let socket_handle = socket.clone();
-    let packet = packet(&dat_url.0);
+    let packet = packet(&dat_url.local_dns_domain());
 
     let query_stream = stream::unfold((socket_handle, packet), |(socket, packet)| {
       async {

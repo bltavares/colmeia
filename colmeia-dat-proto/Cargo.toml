@@ -8,7 +8,6 @@ edition = '2018'
 varinteger = '1.0.6'
 futures = '0.3'
 log = '0.4.8'
-simple-message-channels = '0.0.2'
 protobuf = '=2.10.1'
 
 [dependencies.dat-network-protocol]
@@ -19,3 +18,6 @@ branch = 'update-schema'
 [dependencies.async-std]
 version = '1.4.0'
 features = ['unstable']
+
+[dependencies.simple-message-channels]
+path = '../../datrs/simple-message-channels'

@@ -1,4 +1,5 @@
 use async_std::net::UdpSocket as AsyncUdpSocket;
+use colmeia_dat_core as core;
 use futures::stream::{self, StreamExt};
 use std::net::{SocketAddr, UdpSocket};
 use std::pin::Pin;
@@ -6,17 +7,16 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use trust_dns_proto::op::MessageType;
 
-use crate::crypto;
 use crate::socket;
 
 fn dat_origin_request(
-  dat_url: &crypto::DatLocalDiscoverUrl,
+  dat_url: &core::HashUrl,
   item: Option<socket::MessageStream>,
 ) -> Option<SocketAddr> {
   let item = item?;
   let query = item.0.queries().first()?;
   if item.0.message_type() == MessageType::Query
-    && query.name().to_lowercase().to_ascii() == dat_url.0
+    && query.name().to_lowercase().to_ascii() == dat_url.local_dns_domain()
   {
     let origin = item.1;
     log::debug!("MDNS query originated {:#}", origin);
@@ -66,16 +66,12 @@ pub struct Announcer {
 }
 
 impl Announcer {
-  pub fn new(socket: UdpSocket, dat_url: crypto::DatLocalDiscoverUrl, port: u16) -> Self {
+  pub fn new(socket: UdpSocket, dat_url: core::HashUrl, port: u16) -> Self {
     Self::shared_socket(Arc::new(socket.into()), dat_url, port)
   }
 
-  fn shared_socket(
-    socket: Arc<AsyncUdpSocket>,
-    dat_url: crypto::DatLocalDiscoverUrl,
-    port: u16,
-  ) -> Self {
-    let packet = packet(&dat_url.0, port);
+  fn shared_socket(socket: Arc<AsyncUdpSocket>, dat_url: core::HashUrl, port: u16) -> Self {
+    let packet = packet(&dat_url.local_dns_domain(), port);
 
     let response_stream = stream::unfold((socket.clone(), packet), |(socket, packet)| {
       async {
