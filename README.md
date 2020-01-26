@@ -27,7 +27,11 @@ Modules:
   - [x] `Locator`: stream to find dat members in the network
   - [x] `Announcer`: stream that announces a dat in the network
   - [x] `Mdns`: announces and find dat in the network
-- [ ] `colmeia-dat-proto` **wip**: Parses DAT wire protocol
+- [x] `colmeia-dat-proto` **wip**: Parses DAT v1 wire protocol
+  - [x] Handshake
+  - [x] Read Encrypted
+  - [x] Write Encrypted
+  - [ ] Add more methods (eg: client.have, client.unhave)
 - [ ] `colmeia-dat-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
 - [ ] `colmeia-dat-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
@@ -50,11 +54,14 @@ Reference tools:
 
 - [hyperdrive-daemon](https://github.com/andrewosh/hyperdrive-daemon)
 - [hyperdrive v10](https://github.com/mafintosh/hyperdrive)
+- [snow noise protocol](https://snow.rs/)
+- [hypercore-protocol-rust-experiments](https://github.com/Frando/hypercore-protocol-rust-experiments)
 
 Modules:
 
 - [ ] `colmeia-dht`: Interop with hypwerswarm dht infrastructure
 - [ ] `colmeia-mdns`: Support to hypwerswarm mdns infrastructure
+- [ ] `colmeia-hypercore-proto`: Dat v2 wire protocol
 
 Versions for reference: **TDB**
 
