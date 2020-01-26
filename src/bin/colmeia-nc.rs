@@ -21,8 +21,11 @@ fn main() {
   let socket = address();
   let key = name();
   async_std::task::block_on(async {
-    let mut client = Client::new(&key, socket).await;
-    while let Some(Ok(message)) = client.next().await {
+    let client_initialization = new_client(&key, socket).await;
+    let mut client = handshake(client_initialization)
+      .await
+      .expect("could not handshake");
+    while let Some(Ok(message)) = client.reader().next().await {
       println!("{:?}", message.parse().expect("parsed message"));
     }
   });

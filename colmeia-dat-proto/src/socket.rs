@@ -5,23 +5,72 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use crate::cipher::SharedCipher;
+
 #[derive(Clone)]
-pub struct CloneableStream(pub(crate) Arc<TcpStream>);
+pub struct CloneableStream {
+    pub(crate) socket: Arc<TcpStream>,
+    pub(crate) cipher: SharedCipher,
+    pub(crate) buffer: Option<Vec<u8>>,
+}
+
+impl CloneableStream {
+    pub fn upgrade(&mut self, nonce: &[u8]) {
+        self.cipher
+            .write()
+            .expect("could not aquire upgrade lock")
+            .initialize(nonce);
+    }
+}
 
 impl AsyncRead for CloneableStream {
     fn poll_read(self: Pin<&mut Self>, cx: &mut Context, buf: &mut [u8]) -> Poll<Result<usize>> {
-        Pin::new(&mut &*self.0).poll_read(cx, buf)
+        let content = futures::ready!(Pin::new(&mut &*self.socket).poll_read(cx, buf))?;
+        log::debug!("content to read {:?}", content);
+        log::debug!("original content {:?}", &buf[..content]);
+
+        self.cipher
+            .write()
+            .expect("could not acquire read encrypted lock")
+            .try_apply(&mut buf[..content]);
+
+        log::debug!("maybe encrypted content {:?}", &buf[..content]);
+        Poll::Ready(Ok(content))
     }
 }
 
 impl AsyncWrite for CloneableStream {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<Result<usize>> {
-        Pin::new(&mut &*self.0).poll_write(cx, buf)
+    fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<Result<usize>> {
+        if let Some(output) = &self.buffer {
+            log::debug!(" buffered to send {:?}", output);
+            let sent = futures::ready!(Pin::new(&mut &*self.socket).poll_write(cx, &output))?;
+            if sent == 0 {
+                self.buffer = None;
+            } else {
+                self.buffer = Some(output.iter().skip(sent).cloned().collect());
+            }
+            return Poll::Ready(Ok(sent));
+        }
+
+        log::debug!("content to encrypt {:?}", buf);
+
+        let mut buffer = buf.to_vec();
+
+        self.cipher
+            .write()
+            .expect("could not acquire write encrypted lock")
+            .try_apply(&mut buffer);
+        log::debug!(" maybe encrypted {:?}", buffer);
+
+        self.buffer = Some(buffer);
+        Poll::Pending
     }
+
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<()>> {
-        Pin::new(&mut &*self.0).poll_flush(cx)
+        Pin::new(&mut &*self.socket).poll_flush(cx)
     }
+
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<()>> {
-        Pin::new(&mut &*self.0).poll_close(cx)
+        Pin::new(&mut &*self.socket).poll_close(cx)
     }
 }

@@ -1,18 +1,17 @@
 use async_std::net::TcpStream;
+use async_std::stream::StreamExt;
 use colmeia_dat_core::DatUrlResolution;
-use futures::FutureExt;
 use protobuf::Message;
 use rand::Rng;
-use simple_message_channels::{Cipher, Message as ChannelMessage, Reader, Writer};
+use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
 
-use std::future::Future;
 use std::net::SocketAddr;
-use std::pin::Pin;
 use std::sync::{Arc, RwLock};
-use std::task::{Context, Poll};
 
+mod cipher;
 mod schema;
 mod socket;
+use crate::cipher::Cipher;
 use crate::schema as proto;
 
 #[non_exhaustive]
@@ -57,68 +56,11 @@ impl MessageExt for ChannelMessage {
 pub struct Client {
     reader: Reader<socket::CloneableStream>,
     writer: Writer<socket::CloneableStream>,
-    handshake_writer: Pin<Box<dyn Future<Output = std::io::Result<()>>>>,
-    step: u8,
 }
 
 impl Client {
-    // TODO error handling
-    pub fn new(key: &str, address: SocketAddr) -> impl Future<Output = Self> + '_ {
-        let dat_key = colmeia_dat_core::parse(&key).expect("invalid dat argument");
-
-        let dat_key = match dat_key {
-            DatUrlResolution::HashUrl(result) => result,
-            _ => panic!("invalid hash key"),
-        };
-
-        async move {
-            let reader = socket::CloneableStream(Arc::new(
-                TcpStream::connect(address)
-                    .await
-                    .expect("could not open socket"),
-            ));
-            let writer = reader.clone();
-
-            let cipher = Arc::new(RwLock::new(Cipher::new(
-                dat_key.public_key().as_bytes().to_vec(),
-            )));
-
-            let client_reader = Reader::encrypted(reader, cipher.clone(), |message, cypher| {
-                if let Ok(DatMessage::Feed(payload)) = message.parse() {
-                    if payload.has_nonce() {
-                        cypher.initialize(payload.get_nonce());
-                    }
-                }
-            });
-            let mut handshake_writer = Writer::encrypted(writer.clone(), cipher.clone());
-            let handshake_writer = async move {
-                let id: [u8; 32] = rand::thread_rng().gen(); // TODO use id to avoid self connects
-                let mut handshake = proto::Handshake::new();
-                handshake.set_live(true);
-                handshake.set_ack(false);
-                handshake.set_id(id.to_vec());
-
-                handshake_writer
-                    .send(ChannelMessage::new(
-                        0,
-                        1,
-                        handshake
-                            .write_to_bytes()
-                            .expect("invalid handshake crated"),
-                    ))
-                    .await
-            }
-            .boxed();
-
-            let client_writer = Writer::encrypted(writer, cipher);
-
-            Self {
-                reader: client_reader,
-                writer: client_writer,
-                handshake_writer,
-                step: 0,
-            }
-        }
+    pub fn reader(&mut self) -> &mut Reader<socket::CloneableStream> {
+        &mut self.reader
     }
 
     pub fn writer(&mut self) -> &mut Writer<socket::CloneableStream> {
@@ -126,30 +68,112 @@ impl Client {
     }
 }
 
-impl futures::Stream for Client {
-    type Item = std::io::Result<ChannelMessage>;
+pub struct ClientInitialization {
+    bare_reader: Reader<socket::CloneableStream>,
+    bare_writer: Writer<socket::CloneableStream>,
+    upgradable_reader: socket::CloneableStream,
+    upgradable_writer: socket::CloneableStream,
+    dat_key: colmeia_dat_core::HashUrl,
+}
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        use futures::stream::StreamExt;
+pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization {
+    let dat_key = colmeia_dat_core::parse(&key).expect("invalid dat argument");
 
-        if self.step == 0 {
-            let response = futures::ready!(self.reader.poll_next_unpin(cx));
-            self.step = 1;
-            return Poll::Ready(response);
-        }
+    let dat_key = match dat_key {
+        DatUrlResolution::HashUrl(result) => result,
+        _ => panic!("invalid hash key"),
+    };
 
-        if self.step == 1 {
-            let response = futures::ready!(self.reader.poll_next_unpin(cx));
-            self.step = 2;
-            return Poll::Ready(response);
-        }
+    let socket = Arc::new(
+        TcpStream::connect(address)
+            .await
+            .expect("could not open socket"),
+    );
 
-        if self.step == 2 {
-            log::debug!("sending handshake back");
-            futures::ready!(self.handshake_writer.poll_unpin(cx))?;
-            self.step = 3;
-        }
+    let reader_cipher = Arc::new(RwLock::new(Cipher::new(
+        dat_key.public_key().as_bytes().to_vec(),
+    )));
+    let reader_socket = socket::CloneableStream {
+        socket: socket.clone(),
+        cipher: reader_cipher,
+        buffer: None,
+    };
+    let upgradable_reader = reader_socket.clone();
+    let bare_reader = Reader::new(reader_socket);
 
-        self.reader.poll_next_unpin(cx)
+    let writer_cipher = Arc::new(RwLock::new(Cipher::new(
+        dat_key.public_key().as_bytes().to_vec(),
+    )));
+    let writer_socket = socket::CloneableStream {
+        socket,
+        cipher: writer_cipher,
+        buffer: None,
+    };
+    let upgradable_writer = writer_socket.clone();
+    let bare_writer = Writer::new(writer_socket);
+
+    ClientInitialization {
+        bare_reader,
+        bare_writer,
+        upgradable_reader,
+        upgradable_writer,
+        dat_key,
     }
+}
+
+pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
+    let received_handshake = init.bare_reader.next().await?.ok()?;
+    let parsed_handshake = received_handshake.parse().ok()?;
+    let mut payload = match parsed_handshake {
+        DatMessage::Feed(payload) => payload,
+        _ => return None,
+    };
+
+    log::debug!("Dat feed received {:?}", payload);
+    if payload.get_discoveryKey() != init.dat_key.discovery_key() && !payload.has_nonce() {
+        return None;
+    }
+    log::debug!("Feed received, upgrading read socket");
+    init.upgradable_reader.upgrade(payload.get_nonce());
+    let reader = Reader::new(init.upgradable_reader);
+
+    let nonce: [u8; 24] = rand::thread_rng().gen();
+    let nonce = nonce.to_vec();
+    payload.set_nonce(nonce);
+    init.bare_writer
+        .send(ChannelMessage::new(
+            0,
+            0,
+            payload.write_to_bytes().expect("invalid feed message"),
+        ))
+        .await
+        .ok()?;
+
+    log::debug!("Feed sent, upgrading write socket");
+    init.upgradable_writer.upgrade(payload.get_nonce());
+    let mut writer = Writer::new(init.upgradable_writer);
+
+    let mut handshake = proto::Handshake::new();
+    let id: [u8; 32] = rand::thread_rng().gen();
+    let id = id.to_vec();
+
+    handshake.set_id(id);
+    handshake.set_live(true);
+    handshake.set_ack(false);
+    log::debug!("Dat handshake to send {:?}", &handshake);
+
+    writer
+        .send(ChannelMessage::new(
+            0,
+            1,
+            handshake
+                .write_to_bytes()
+                .expect("invalid handshake message"),
+        ))
+        .await
+        .ok()?;
+
+    log::debug!("Handshake finished");
+
+    Some(Client { reader, writer })
 }
