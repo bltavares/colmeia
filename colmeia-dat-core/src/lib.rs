@@ -19,20 +19,21 @@ fn dns_discovery_key(discovery_key: &[u8]) -> String {
 }
 
 #[derive(Debug, Clone)]
-pub struct HashUrl<'a> {
+pub struct HashUrl {
     public_key: PublicKey,
     discovery_key: Vec<u8>,
     local_dns_domain: String,
-    original: DatUrl<'a>,
+    original: DatUrl<'static>,
 }
 
+#[derive(Clone)]
 pub enum DatUrlResolution<'a> {
-    HashUrl(HashUrl<'a>),
+    HashUrl(HashUrl),
     RemoteUrl(DatUrl<'a>),
 }
 
-pub fn parse<'a>(dat_name: &'a str) -> Result<DatUrlResolution<'a>, Error> {
-    let dat_url = DatUrl::parse(dat_name)?;
+pub fn parse(dat_name: &str) -> Result<DatUrlResolution, Error> {
+    let dat_url = DatUrl::parse(dat_name)?.into_owned();
     let public_key_bytes = hex::decode(dat_url.host().as_bytes());
 
     let public_key_bytes = match public_key_bytes {
@@ -49,8 +50,8 @@ pub fn parse<'a>(dat_name: &'a str) -> Result<DatUrlResolution<'a>, Error> {
     Ok(DatUrlResolution::HashUrl(HashUrl::new(public_key, dat_url)))
 }
 
-impl<'a> HashUrl<'a> {
-    fn new(public_key: PublicKey, original: DatUrl<'a>) -> Self {
+impl HashUrl {
+    fn new(public_key: PublicKey, original: DatUrl<'static>) -> Self {
         let discovery_key = discovery_key(&public_key);
         let local_dns_domain = dns_discovery_key(&discovery_key) + HOSTNAME;
 

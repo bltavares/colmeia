@@ -78,5 +78,5 @@ RUST_LOG=debug cargo run --bin colmeia-mdns -- dat://460f04cf12c3b9833e5a0d3dd8e
 [colmeia-nc](./src/bin/colmeia-nc.rs)
 
 ```sh
-RUST_LOG=debug cargo run --bin colmeia-nc -- 127.0.0.1:3282
+RUST_LOG=debug cargo run --bin colmeia-nc -- 127.0.0.1:3282  dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
 ```

@@ -5,10 +5,13 @@ authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
 
 [dependencies]
-varinteger = '1.0.6'
 futures = '0.3'
 log = '0.4.8'
-protobuf = '=2.10.1'
+protobuf = '2.10.1'
+rand = '0.7.3'
+
+[dependencies.colmeia-dat-core]
+path = '../colmeia-dat-core'
 
 [dependencies.dat-network-protocol]
 version = '1.0.0'
@@ -21,3 +24,6 @@ features = ['unstable']
 
 [dependencies.simple-message-channels]
 path = '../../datrs/simple-message-channels'
+
+[build-dependencies]
+protobuf-codegen-pure = '2.10.1'
