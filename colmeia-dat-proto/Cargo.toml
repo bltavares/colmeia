@@ -10,7 +10,10 @@ log = '0.4.8'
 protobuf = '2.10.1'
 rand = '0.7.3'
 salsa20 = '0.4.0'
-simple-message-channels = '0.1.0'
+
+[dependencies.simple-message-channels]
+version = '0.1.0'
+path = '../../datrs/simple-message-channels'
 
 [dependencies.colmeia-dat-core]
 path = '../colmeia-dat-core'

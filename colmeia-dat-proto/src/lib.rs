@@ -1,6 +1,7 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
 use colmeia_dat_core::DatUrlResolution;
+use futures::io::{AsyncWriteExt, BufReader, BufWriter};
 use protobuf::Message;
 use rand::Rng;
 use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
@@ -54,18 +55,24 @@ impl MessageExt for ChannelMessage {
 }
 
 pub struct Client {
-    reader: Reader<socket::CloneableStream>,
-    writer: Writer<socket::CloneableStream>,
+    reader: Reader<BufReader<socket::CloneableStream>>,
+    writer: Writer<BufWriter<socket::CloneableStream>>,
+    pub(crate) socket: socket::CloneableStream,
 }
 
 impl Client {
-    pub fn reader(&mut self) -> &mut Reader<socket::CloneableStream> {
+    pub fn reader(&mut self) -> &mut Reader<BufReader<socket::CloneableStream>> {
         &mut self.reader
     }
 
-    pub fn writer(&mut self) -> &mut Writer<socket::CloneableStream> {
+    pub fn writer(&mut self) -> &mut Writer<BufWriter<socket::CloneableStream>> {
         &mut self.writer
     }
+}
+
+// TODO use async_trait?
+pub async fn ping(client: &mut Client) -> std::io::Result<usize> {
+    client.socket.write(&[0u8]).await
 }
 
 pub struct ClientInitialization {
@@ -74,6 +81,7 @@ pub struct ClientInitialization {
     upgradable_reader: socket::CloneableStream,
     upgradable_writer: socket::CloneableStream,
     dat_key: colmeia_dat_core::HashUrl,
+    socket: socket::CloneableStream,
 }
 
 pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization {
@@ -105,7 +113,7 @@ pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization 
         dat_key.public_key().as_bytes().to_vec(),
     )));
     let writer_socket = socket::CloneableStream {
-        socket,
+        socket: socket.clone(),
         cipher: writer_cipher,
         buffer: None,
     };
@@ -118,13 +126,18 @@ pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization 
         upgradable_reader,
         upgradable_writer,
         dat_key,
+        socket: socket::CloneableStream {
+            socket,
+            cipher: Arc::new(RwLock::new(Cipher::empty())),
+            buffer: None,
+        },
     }
 }
 
 pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
-    let received_handshake = init.bare_reader.next().await?.ok()?;
-    let parsed_handshake = received_handshake.parse().ok()?;
-    let mut payload = match parsed_handshake {
+    let received_feed = init.bare_reader.next().await?.ok()?;
+    let parsed_feed = received_feed.parse().ok()?;
+    let mut payload = match parsed_feed {
         DatMessage::Feed(payload) => payload,
         _ => return None,
     };
@@ -135,7 +148,7 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
     }
     log::debug!("Feed received, upgrading read socket");
     init.upgradable_reader.upgrade(payload.get_nonce());
-    let reader = Reader::new(init.upgradable_reader);
+    let mut reader = Reader::new(BufReader::new(init.upgradable_reader));
 
     let nonce: [u8; 24] = rand::thread_rng().gen();
     let nonce = nonce.to_vec();
@@ -151,7 +164,7 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
 
     log::debug!("Feed sent, upgrading write socket");
     init.upgradable_writer.upgrade(payload.get_nonce());
-    let mut writer = Writer::new(init.upgradable_writer);
+    let mut writer = Writer::new(BufWriter::new(init.upgradable_writer));
 
     let mut handshake = proto::Handshake::new();
     let id: [u8; 32] = rand::thread_rng().gen();
@@ -173,7 +186,23 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
         .await
         .ok()?;
 
+    let handshake_received = reader.next().await?.ok()?;
+    let handshake_parsed = handshake_received.parse().ok()?;
+    let payload = match handshake_parsed {
+        DatMessage::Handshake(payload) => payload,
+        _ => return None,
+    };
+
+    if handshake.get_id() == payload.get_id() {
+        // disconnect, we connect to ourselves
+        return None;
+    }
+
     log::debug!("Handshake finished");
 
-    Some(Client { reader, writer })
+    Some(Client {
+        reader,
+        writer,
+        socket: init.socket,
+    })
 }

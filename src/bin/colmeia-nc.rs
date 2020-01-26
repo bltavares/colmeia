@@ -25,8 +25,13 @@ fn main() {
     let mut client = handshake(client_initialization)
       .await
       .expect("could not handshake");
-    while let Some(Ok(message)) = client.reader().next().await {
-      println!("{:?}", message.parse().expect("parsed message"));
+    if let Some(Ok(message)) = client.reader().next().await {
+      eprintln!("{:?}", message.parse().expect("parsed message"));
+    }
+    ping(&mut client).await.expect("could not ping");
+    ping(&mut client).await.expect("could not ping");
+    if let Some(Ok(message)) = client.reader().next().await {
+      eprintln!("{:?}", message.parse().expect("parsed message"));
     }
   });
 }

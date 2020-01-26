@@ -14,6 +14,10 @@ impl Cipher {
         Self { key, cipher: None }
     }
 
+    pub fn empty() -> Self {
+        Self::new(vec![])
+    }
+
     pub fn initialize(&mut self, nonce: &[u8]) {
         self.cipher = XSalsa20::new_var(&self.key, &nonce).ok();
     }
