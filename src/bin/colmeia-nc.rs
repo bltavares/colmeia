@@ -30,11 +30,13 @@ fn main() {
       .await
       .expect("could not handshake");
     if let Some(Ok(message)) = client.reader().next().await {
+      eprintln!("{:?}", message);
       eprintln!("{:?}", message.parse().expect("parsed message"));
     }
     ping(&mut client).await.expect("could not ping");
     ping(&mut client).await.expect("could not ping");
     if let Some(Ok(message)) = client.reader().next().await {
+      eprintln!("{:?}", message);
       eprintln!("{:?}", message.parse().expect("parsed message"));
     }
   });
