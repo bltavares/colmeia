@@ -125,6 +125,7 @@ pub async fn new_client(key: &str, tcp_stream: TcpStream) -> ClientInitializatio
 }
 
 pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
+    log::debug!("Bulding nonce to start connection");
     let nonce: [u8; 24] = rand::thread_rng().gen();
     let nonce = nonce.to_vec();
     let mut feed = proto::Feed::new();
@@ -143,10 +144,26 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
     init.upgradable_writer.upgrade(feed.get_nonce());
     let mut writer = Writer::new(BufWriter::new(init.upgradable_writer));
 
+    log::debug!("Preparing to read feed nonce");
+    let received_feed = init.bare_reader.next().await?.ok()?;
+    let parsed_feed = received_feed.parse().ok()?;
+    let payload = match parsed_feed {
+        DatMessage::Feed(payload) => payload,
+        _ => return None,
+    };
+
+    log::debug!("Dat feed received {:?}", payload);
+    if payload.get_discoveryKey() != init.dat_key.discovery_key() && !payload.has_nonce() {
+        return None;
+    }
+    log::debug!("Feed received, upgrading read socket");
+    init.upgradable_reader.upgrade(payload.get_nonce());
+    let mut reader = Reader::new(BufReader::new(init.upgradable_reader));
+
+    log::debug!("Preparing to send encrypted handshake");
     let mut handshake = proto::Handshake::new();
     let id: [u8; 32] = rand::thread_rng().gen();
     let id = id.to_vec();
-
     handshake.set_id(id);
     handshake.set_live(true);
     handshake.set_ack(false);
@@ -163,21 +180,7 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
         .await
         .ok()?;
 
-    let received_feed = init.bare_reader.next().await?.ok()?;
-    let parsed_feed = received_feed.parse().ok()?;
-    let payload = match parsed_feed {
-        DatMessage::Feed(payload) => payload,
-        _ => return None,
-    };
-
-    log::debug!("Dat feed received {:?}", payload);
-    if payload.get_discoveryKey() != init.dat_key.discovery_key() && !payload.has_nonce() {
-        return None;
-    }
-    log::debug!("Feed received, upgrading read socket");
-    init.upgradable_reader.upgrade(payload.get_nonce());
-    let mut reader = Reader::new(BufReader::new(init.upgradable_reader));
-
+    log::debug!("Preparing to read encrypted handshake");
     let handshake_received = reader.next().await?.ok()?;
     let handshake_parsed = handshake_received.parse().ok()?;
     let payload = match handshake_parsed {

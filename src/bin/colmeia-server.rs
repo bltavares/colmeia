@@ -21,7 +21,7 @@ fn name() -> String {
 async fn lan(dat_url: String, address: SocketAddr) {
     let mut mdns = colmeia_dat_mdns::Mdns::new(&dat_url).expect("could not start mdns");
     mdns.with_announcer(address.port())
-        .with_location(Duration::from_secs(10));
+        .with_location(Duration::from_secs(60));
     while let Some(peer) = mdns.next().await {
         println!("Peer found {:?}", peer);
     }

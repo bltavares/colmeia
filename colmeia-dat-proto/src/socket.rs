@@ -41,8 +41,19 @@ impl AsyncRead for CloneableStream {
 
 impl AsyncWrite for CloneableStream {
     fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<Result<usize>> {
+        log::debug!("Sending information over the network");
+        if let None = self.buffer {
+            log::debug!("content to encrypt {:?}", buf);
+            let mut buffer = buf.to_vec();
+            self.cipher
+                .write()
+                .expect("could not acquire write encrypted lock")
+                .try_apply(&mut buffer);
+            log::debug!("maybe encrypted {:?}", buffer);
+            self.buffer = Some(buffer);
+        }
         if let Some(output) = &self.buffer {
-            log::debug!(" buffered to send {:?}", output);
+            log::debug!("buffered to send {:?}", output);
             let sent = futures::ready!(Pin::new(&mut &*self.socket).poll_write(cx, &output))?;
             if sent == 0 {
                 self.buffer = None;
@@ -51,18 +62,6 @@ impl AsyncWrite for CloneableStream {
             }
             return Poll::Ready(Ok(sent));
         }
-
-        log::debug!("content to encrypt {:?}", buf);
-
-        let mut buffer = buf.to_vec();
-
-        self.cipher
-            .write()
-            .expect("could not acquire write encrypted lock")
-            .try_apply(&mut buffer);
-        log::debug!(" maybe encrypted {:?}", buffer);
-
-        self.buffer = Some(buffer);
         Poll::Pending
     }
 
