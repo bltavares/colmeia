@@ -5,8 +5,6 @@ use futures::io::{AsyncWriteExt, BufReader, BufWriter};
 use protobuf::Message;
 use rand::Rng;
 use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
-
-use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 
 mod cipher;
@@ -84,7 +82,7 @@ pub struct ClientInitialization {
     writer_socket: socket::CloneableStream,
 }
 
-pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization {
+pub async fn new_client(key: &str, tcp_stream: TcpStream) -> ClientInitialization {
     let dat_key = colmeia_dat_core::parse(&key).expect("invalid dat argument");
 
     let dat_key = match dat_key {
@@ -92,11 +90,7 @@ pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization 
         _ => panic!("invalid hash key"),
     };
 
-    let socket = Arc::new(
-        TcpStream::connect(address)
-            .await
-            .expect("could not open socket"),
-    );
+    let socket = Arc::new(tcp_stream);
 
     let reader_cipher = Arc::new(RwLock::new(Cipher::new(
         dat_key.public_key().as_bytes().to_vec(),

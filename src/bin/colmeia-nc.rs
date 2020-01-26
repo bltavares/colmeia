@@ -1,3 +1,4 @@
+use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
 use colmeia_dat_proto::*;
 use std::net::SocketAddr;
@@ -18,10 +19,13 @@ fn name() -> String {
 fn main() {
   env_logger::init();
 
-  let socket = address();
+  let address = address();
   let key = name();
   async_std::task::block_on(async {
-    let client_initialization = new_client(&key, socket).await;
+    let tcp_stream = TcpStream::connect(address)
+      .await
+      .expect("could not open address");
+    let client_initialization = new_client(&key, tcp_stream).await;
     let mut client = handshake(client_initialization)
       .await
       .expect("could not handshake");
