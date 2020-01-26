@@ -57,7 +57,7 @@ impl MessageExt for ChannelMessage {
 pub struct Client {
     reader: Reader<BufReader<socket::CloneableStream>>,
     writer: Writer<BufWriter<socket::CloneableStream>>,
-    pub(crate) socket: socket::CloneableStream,
+    pub(crate) writer_socket: socket::CloneableStream,
 }
 
 impl Client {
@@ -72,7 +72,7 @@ impl Client {
 
 // TODO use async_trait?
 pub async fn ping(client: &mut Client) -> std::io::Result<usize> {
-    client.socket.write(&[0u8]).await
+    client.writer_socket.write(&[0u8]).await
 }
 
 pub struct ClientInitialization {
@@ -81,7 +81,7 @@ pub struct ClientInitialization {
     upgradable_reader: socket::CloneableStream,
     upgradable_writer: socket::CloneableStream,
     dat_key: colmeia_dat_core::HashUrl,
-    socket: socket::CloneableStream,
+    writer_socket: socket::CloneableStream,
 }
 
 pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization {
@@ -118,7 +118,7 @@ pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization 
         buffer: None,
     };
     let upgradable_writer = writer_socket.clone();
-    let bare_writer = Writer::new(writer_socket);
+    let bare_writer = Writer::new(writer_socket.clone());
 
     ClientInitialization {
         bare_reader,
@@ -126,11 +126,7 @@ pub async fn new_client(key: &str, address: SocketAddr) -> ClientInitialization 
         upgradable_reader,
         upgradable_writer,
         dat_key,
-        socket: socket::CloneableStream {
-            socket,
-            cipher: Arc::new(RwLock::new(Cipher::empty())),
-            buffer: None,
-        },
+        writer_socket,
     }
 }
 
@@ -203,6 +199,6 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
     Some(Client {
         reader,
         writer,
-        socket: init.socket,
+        writer_socket: init.writer_socket,
     })
 }
