@@ -99,3 +99,63 @@ RUST_LOG=debug cargo run --bin colmeia-server -- 0.0.0.0:8787 dat://460f04cf12c3
 ```sh
 DEBUG="dat*" npx dat share
 ```
+
+## Cross compilation
+
+### Android
+
+[It works!](https://twitter.com/bltavares/status/1221587189668163584)
+
+- **No root required**
+- Windows: Using WSL2 (windows insider) allows you to use Docker from WSL. [Follow this guide to enable docker](https://docs.docker.com/docker-for-windows/wsl-tech-preview/)
+- Mac/Linux: It should just need to have docker configured properly
+
+- Install [cross](https://github.com/rust-embedded/cross#installation)
+
+- Cross compile to your target:
+
+```sh
+cross build --target armv7-linux-androideabi
+```
+
+- To find the correct target for your device: `adb shell uname -m`
+
+| arch             | target                  |
+|------------------|-------------------------|
+| armv7l           | armv7-linux-androideabi |
+| aarch64 or arm64 | aarch64-linux-android   |
+| arm*             | arm-linux-androideabi   |
+
+*arm: ([seems to be broken](https://internals.rust-lang.org/t/what-is-the-current-status-of-arm-linux-androideabi/4507/7))
+
+- Push to Android on a writeable location. Android does not allow binaries to be executed from the `/sdcard`:
+
+```sh
+# Once
+adb shell mkdir -p /data/local/tmp/colmeia
+adb shell chmod 777 /data/local/tmp/colmeia # Make it readable to let Termux read it as well
+
+adb push ./target/armv7-linux-androideabi/debug/colmeia-mdns /data/local/tmp/colmeia
+```
+
+### Android ADB shell
+
+```sh
+adb shell # open shell in android
+chmod +x /data/local/tmp/colmeia/colmeia-server
+
+RUST_LOG=debug  /data/local/tmp/colmeia/colmeia-server 0.0.0.0:8787 dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
+```
+
+### [Termux](https://termux.com/) from inside Android
+
+Android don't allow execution from outside the app data dir, and you can't push data to other apps dir from `adb push`. You need to copy the binary to your root folder, which should be executable.
+
+Open the app and copy the content to the home folder:
+
+```sh
+# Inside termux shell
+cp /data/local/tmp/colmeia/colmeia-server ~
+
+RUST_LOG=debug ~/colmeia-server 0.0.0.0:8787 dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
+```
