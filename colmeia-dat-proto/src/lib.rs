@@ -1,11 +1,15 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
+use async_trait::async_trait;
 use colmeia_dat_core::DatUrlResolution;
 use futures::io::{AsyncWriteExt, BufReader, BufWriter};
+use pin_project::pin_project;
 use protobuf::Message;
 use rand::Rng;
 use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
+use std::pin::Pin;
 use std::sync::{Arc, RwLock};
+use std::task::{Context, Poll};
 
 mod cipher;
 mod schema;
@@ -65,6 +69,47 @@ impl Client {
 
     pub fn writer(&mut self) -> &mut Writer<BufWriter<socket::CloneableStream>> {
         &mut self.writer
+    }
+}
+
+// TODO macro?
+// TODO async-trait?
+#[async_trait]
+pub trait DatObserver {
+    fn on_feed(&mut self, _client: &'_ mut Client, message: &'_ proto::Feed) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_info(&mut self, _client: &mut Client, message: &proto::Info) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_have(&mut self, _client: &mut Client, message: &proto::Have) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_unhave(&mut self, _client: &mut Client, message: &proto::Unhave) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_want(&mut self, _client: &mut Client, message: &proto::Want) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_unwant(&mut self, _client: &mut Client, message: &proto::Unwant) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_request(&mut self, _client: &mut Client, message: &proto::Request) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_cancel(&mut self, _client: &mut Client, message: &proto::Cancel) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_data(&mut self, _client: &mut Client, message: &proto::Data) {
+        log::debug!("Received message {:?}", message);
     }
 }
 
@@ -200,4 +245,59 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
         writer,
         writer_socket: init.writer_socket,
     })
+}
+
+#[pin_project]
+pub struct DatProtocol<O>
+where
+    O: DatObserver + Send,
+{
+    #[pin]
+    client: Client,
+    #[pin]
+    observer: O,
+    action: Option<Pin<Box<dyn futures::Future<Output = ()> + Send>>>,
+}
+
+impl<O> futures::Stream for DatProtocol<O>
+where
+    O: DatObserver + Send,
+{
+    type Item = DatMessage;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        use futures::future::FutureExt;
+        use futures::stream::StreamExt;
+
+        let mut this = self.project();
+
+        // Process any pending action
+        let current_action = this.action.take();
+        match current_action {
+            Some(mut action) => match action.poll_unpin(cx) {
+                Poll::Pending => {
+                    this.action = &mut Some(action);
+                    return Poll::Pending;
+                }
+                _ => (),
+            },
+            _ => (),
+        };
+
+        let response = futures::ready!(this.client.reader().poll_next_unpin(cx));
+
+        match response {
+            None => return Poll::Ready(None),
+            Some(Err(err)) => log::debug!("Dropping error {:?}", err),
+            Some(Ok(message)) => match message.parse() {
+                Ok(DatMessage::Feed(m)) => {
+                    (&mut this.observer).on_feed(&mut this.client, &m);
+                }
+                Err(err) => log::debug!("Dropping message {:?} err {:?}", message, err),
+                _ => todo!(),
+            },
+        };
+
+        Poll::Pending
+    }
 }
