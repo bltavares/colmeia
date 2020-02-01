@@ -9,9 +9,9 @@ Write a pure rust network stack compatible with dat, to be able to run it on des
 
 ## Milestones
 
-- [ ] **wip** Generate a binary that finds and talk to a LAN `dat` node: handshake and disconnect
-- [ ] Create a connection pool that tracks dat peers
-- [ ] Compile to Android
+- [x] Generate a binary that finds and talk to a LAN `dat` node: handshake and disconnect
+- [x] Compile to Android
+- [ ] **next** Create a connection pool that tracks dat peers, and track hypercore version to allow crossing bridges
 - [ ] Bundle the binary into a Flutter app that displays the connection pool of dat peers for a given dat url
 - [ ] *(stretch goal)* Write a Flutter app (micro-app as in a  micro-service) that syncs and share files, allowing to build other local-first apps without needing to bundle the network stack logic (like [dat-desktop](https://github.com/dat-land/dat-desktop) but for mobile and desktop without Node)
 - [ ] *(stretch-er goal)* WASM and websocket integration
@@ -27,11 +27,12 @@ Modules:
   - [x] `Locator`: stream to find dat members in the network
   - [x] `Announcer`: stream that announces a dat in the network
   - [x] `Mdns`: announces and find dat in the network
-- [x] `colmeia-dat-proto` **wip**: Parses DAT v1 wire protocol
+- [x] `colmeia-dat-proto`: Parses DAT v1 wire protocol
   - [x] Handshake
   - [x] Read Encrypted
   - [x] Write Encrypted
-  - [ ] Add more methods (eg: client.have, client.unhave)
+  - [x] Add more methods and service handler
+  - [ ] **next** Integrate with hypercore
 - [ ] `colmeia-dat-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
 - [ ] `colmeia-dat-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
