@@ -45,7 +45,7 @@ impl AsyncWrite for CloneableStream {
         log::debug!("content to encrypt {:?}", buf);
         log::debug!("content to encrypt {:?}", self.buffer);
 
-        if let None = self.buffer {
+        if self.buffer.is_none() {
             log::debug!("content to encrypt {:?}", buf);
             let mut buffer = buf.to_vec();
             self.cipher
@@ -62,7 +62,7 @@ impl AsyncWrite for CloneableStream {
                 self.buffer = None;
             } else {
                 let remaining: Vec<u8> = output.iter().skip(sent).cloned().collect();
-                if remaining.len() == 0 {
+                if remaining.is_empty() {
                     self.buffer = None;
                 } else {
                     self.buffer = Some(remaining);

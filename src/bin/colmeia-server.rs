@@ -11,6 +11,12 @@ pub struct SimpleDatServer {
     dat_keys: HashMap<u64, Vec<u8>>,
 }
 
+impl Default for SimpleDatServer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SimpleDatServer {
     pub fn new() -> Self {
         Self {
@@ -126,8 +132,8 @@ fn main() {
     let key = name();
 
     async_std::task::block_on(async {
-        let lan = async_std::task::spawn(lan(key.clone(), address.clone()));
-        let serve = async_std::task::spawn(serve(key.clone(), address.clone()));
+        let lan = async_std::task::spawn(lan(key.clone(), address));
+        let serve = async_std::task::spawn(serve(key.clone(), address));
 
         lan.join(serve).await;
     });

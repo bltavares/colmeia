@@ -22,6 +22,12 @@ pub struct SimpleDatClient {
   dat_keys: HashMap<u64, Vec<u8>>,
 }
 
+impl Default for SimpleDatClient {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl SimpleDatClient {
   pub fn new() -> Self {
     Self {

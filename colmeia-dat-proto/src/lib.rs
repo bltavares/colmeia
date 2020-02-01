@@ -232,7 +232,7 @@ pub async fn new_client(key: &str, tcp_stream: TcpStream) -> ClientInitializatio
         dat_key.public_key().as_bytes().to_vec(),
     )));
     let writer_socket = socket::CloneableStream {
-        socket: socket.clone(),
+        socket,
         cipher: writer_cipher,
         buffer: None,
     };
@@ -312,7 +312,7 @@ where
         observer.on_finish(client).await;
         return None;
     }
-    return result;
+    result
 }
 
 // TODO: Integrate timeout and pings
@@ -424,6 +424,12 @@ impl SimpleDatHandshake {
             feeds: HashMap::new(),
             handshakes: HashMap::new(),
         }
+    }
+}
+
+impl Default for SimpleDatHandshake {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
