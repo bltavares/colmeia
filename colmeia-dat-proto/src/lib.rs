@@ -1,21 +1,21 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use async_trait::async_trait;
+pub use async_trait::async_trait;
 use colmeia_dat_core::DatUrlResolution;
 use futures::io::{AsyncWriteExt, BufReader, BufWriter};
 use futures::stream;
-use protobuf::Message;
+pub use protobuf::Message;
 use rand::Rng;
-use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
+pub use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 
 mod cipher;
-mod schema;
+pub mod schema;
 mod socket;
 use crate::cipher::Cipher;
-use crate::schema as proto;
+pub use crate::schema as proto;
 
 #[non_exhaustive]
 #[derive(Debug)]
@@ -76,57 +76,73 @@ impl Client {
 // TODO async-trait?
 #[async_trait]
 pub trait DatObserver {
-    async fn on_start(&mut self, _client: &mut Client) {
+    async fn on_start(&mut self, _client: &mut Client) -> Option<()> {
         log::debug!("Starting");
+        Some(())
     }
 
-    async fn on_stop(&mut self, _client: &mut Client) {
+    async fn on_stop(&mut self, _client: &mut Client) -> Option<()> {
         log::debug!("Starting");
+        Some(())
     }
 
-    async fn on_feed(&mut self, _client: &mut Client, message: &proto::Feed) {
+    async fn on_feed(&mut self, _client: &mut Client, message: &proto::Feed) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_handshake(&mut self, _client: &mut Client, message: &proto::Handshake) {
+    async fn on_handshake(
+        &mut self,
+        _client: &mut Client,
+        message: &proto::Handshake,
+    ) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_info(&mut self, _client: &mut Client, message: &proto::Info) {
+    async fn on_info(&mut self, _client: &mut Client, message: &proto::Info) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_have(&mut self, _client: &mut Client, message: &proto::Have) {
+    async fn on_have(&mut self, _client: &mut Client, message: &proto::Have) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_unhave(&mut self, _client: &mut Client, message: &proto::Unhave) {
+    async fn on_unhave(&mut self, _client: &mut Client, message: &proto::Unhave) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_want(&mut self, _client: &mut Client, message: &proto::Want) {
+    async fn on_want(&mut self, _client: &mut Client, message: &proto::Want) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_unwant(&mut self, _client: &mut Client, message: &proto::Unwant) {
+    async fn on_unwant(&mut self, _client: &mut Client, message: &proto::Unwant) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_request(&mut self, _client: &mut Client, message: &proto::Request) {
+    async fn on_request(&mut self, _client: &mut Client, message: &proto::Request) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_cancel(&mut self, _client: &mut Client, message: &proto::Cancel) {
+    async fn on_cancel(&mut self, _client: &mut Client, message: &proto::Cancel) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 
-    async fn on_data(&mut self, _client: &mut Client, message: &proto::Data) {
+    async fn on_data(&mut self, _client: &mut Client, message: &proto::Data) -> Option<()> {
         log::debug!("Received message {:?}", message);
+        Some(())
     }
 }
 
 // async-trait?
-async fn ping(client: &mut Client) -> std::io::Result<usize> {
+pub async fn ping(client: &mut Client) -> std::io::Result<usize> {
     client.writer_socket.write(&[0u8]).await
 }
 
@@ -282,25 +298,24 @@ impl DatService {
                 };
 
                 let response = client.reader().next().await?;
-
                 match &response {
                     Err(err) => {
                         log::debug!("Error {:?}. stopping stream", err);
                         return None;
                     }
                     Ok(message) => match message.parse() {
-                        Ok(DatMessage::Feed(m)) => observer.on_feed(&mut client, &m).await,
+                        Ok(DatMessage::Feed(m)) => observer.on_feed(&mut client, &m).await?,
                         Ok(DatMessage::Handshake(m)) => {
-                            observer.on_handshake(&mut client, &m).await
+                            observer.on_handshake(&mut client, &m).await?
                         }
-                        Ok(DatMessage::Info(m)) => observer.on_info(&mut client, &m).await,
-                        Ok(DatMessage::Have(m)) => observer.on_have(&mut client, &m).await,
-                        Ok(DatMessage::Unhave(m)) => observer.on_unhave(&mut client, &m).await,
-                        Ok(DatMessage::Want(m)) => observer.on_want(&mut client, &m).await,
-                        Ok(DatMessage::Unwant(m)) => observer.on_unwant(&mut client, &m).await,
-                        Ok(DatMessage::Request(m)) => observer.on_request(&mut client, &m).await,
-                        Ok(DatMessage::Cancel(m)) => observer.on_cancel(&mut client, &m).await,
-                        Ok(DatMessage::Data(m)) => observer.on_data(&mut client, &m).await,
+                        Ok(DatMessage::Info(m)) => observer.on_info(&mut client, &m).await?,
+                        Ok(DatMessage::Have(m)) => observer.on_have(&mut client, &m).await?,
+                        Ok(DatMessage::Unhave(m)) => observer.on_unhave(&mut client, &m).await?,
+                        Ok(DatMessage::Want(m)) => observer.on_want(&mut client, &m).await?,
+                        Ok(DatMessage::Unwant(m)) => observer.on_unwant(&mut client, &m).await?,
+                        Ok(DatMessage::Request(m)) => observer.on_request(&mut client, &m).await?,
+                        Ok(DatMessage::Cancel(m)) => observer.on_cancel(&mut client, &m).await?,
+                        Ok(DatMessage::Data(m)) => observer.on_data(&mut client, &m).await?,
                         Err(err) => log::debug!("Dropping message {:?} err {:?}", message, err),
                     },
                 };
@@ -321,34 +336,5 @@ impl stream::Stream for DatService {
         use futures::stream::StreamExt;
 
         self.stream.poll_next_unpin(cx)
-    }
-}
-
-pub struct SimpleDatObserver {
-    dat_key: colmeia_dat_core::HashUrl,
-}
-
-impl SimpleDatObserver {
-    pub fn new(dat_key: colmeia_dat_core::HashUrl) -> Self {
-        Self { dat_key }
-    }
-}
-
-#[async_trait]
-impl DatObserver for SimpleDatObserver {
-    async fn on_start(&mut self, client: &mut Client) {
-        let mut message = proto::Feed::new();
-        message.set_discoveryKey(self.dat_key.discovery_key().to_vec());
-        println!("message {:?}", self.dat_key.discovery_key());
-
-        client
-            .writer()
-            .send(ChannelMessage::new(
-                1,
-                0,
-                message.write_to_bytes().expect("invalid dat message"),
-            ))
-            .await;
-        ping(client).await.expect("closed stream");
     }
 }

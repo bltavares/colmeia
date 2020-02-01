@@ -16,6 +16,39 @@ fn name() -> String {
   args.first().expect("must have dat name as argument").into()
 }
 
+pub struct SimpleDatClient {
+  dat_key: Option<Vec<u8>>,
+}
+
+impl SimpleDatClient {
+  pub fn new() -> Self {
+    Self { dat_key: None }
+  }
+}
+
+#[async_trait]
+impl DatObserver for SimpleDatClient {
+  async fn on_feed(&mut self, client: &mut Client, message: &proto::Feed) -> Option<()> {
+    if let None = self.dat_key {
+      self.dat_key = Some(message.get_discoveryKey().to_vec());
+      eprintln!("{:?}", hex::encode(message.get_discoveryKey().to_vec()));
+      client
+        .writer()
+        .send(ChannelMessage::new(
+          1,
+          0,
+          message.write_to_bytes().expect("invalid dat message"),
+        ))
+        .await
+        .expect("could not write message back");
+
+      return Some(());
+    } else {
+      return None;
+    }
+  }
+}
+
 fn main() {
   env_logger::init();
 
@@ -26,16 +59,11 @@ fn main() {
       .await
       .expect("could not open address");
     let client_initialization = new_client(&key, tcp_stream).await;
-    println!(
-      "{:?}",
-      hex::encode(&client_initialization.dat_key().discovery_key())
-    );
-
-    let observer = SimpleDatObserver::new(client_initialization.dat_key().clone());
     let client = handshake(client_initialization)
       .await
       .expect("could not handshake");
 
+    let observer = SimpleDatClient::new();
     let mut service = DatService::new(client, observer);
 
     while let Some(message) = service.next().await {
