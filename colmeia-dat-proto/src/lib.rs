@@ -3,7 +3,7 @@ use async_std::stream::StreamExt;
 use async_trait::async_trait;
 use colmeia_dat_core::DatUrlResolution;
 use futures::io::{AsyncWriteExt, BufReader, BufWriter};
-use pin_project::pin_project;
+use futures::stream;
 use protobuf::Message;
 use rand::Rng;
 use simple_message_channels::{Message as ChannelMessage, Reader, Writer};
@@ -76,7 +76,19 @@ impl Client {
 // TODO async-trait?
 #[async_trait]
 pub trait DatObserver {
-    fn on_feed(&mut self, _client: &'_ mut Client, message: &'_ proto::Feed) {
+    async fn on_start(&mut self, _client: &mut Client) {
+        log::debug!("Starting");
+    }
+
+    async fn on_stop(&mut self, _client: &mut Client) {
+        log::debug!("Starting");
+    }
+
+    async fn on_feed(&mut self, _client: &mut Client, message: &proto::Feed) {
+        log::debug!("Received message {:?}", message);
+    }
+
+    async fn on_handshake(&mut self, _client: &mut Client, message: &proto::Handshake) {
         log::debug!("Received message {:?}", message);
     }
 
@@ -113,8 +125,8 @@ pub trait DatObserver {
     }
 }
 
-// TODO use async_trait?
-pub async fn ping(client: &mut Client) -> std::io::Result<usize> {
+// async-trait?
+async fn ping(client: &mut Client) -> std::io::Result<usize> {
     client.writer_socket.write(&[0u8]).await
 }
 
@@ -125,6 +137,12 @@ pub struct ClientInitialization {
     upgradable_writer: socket::CloneableStream,
     dat_key: colmeia_dat_core::HashUrl,
     writer_socket: socket::CloneableStream,
+}
+
+impl ClientInitialization {
+    pub fn dat_key(&self) -> &colmeia_dat_core::HashUrl {
+        &self.dat_key
+    }
 }
 
 pub async fn new_client(key: &str, tcp_stream: TcpStream) -> ClientInitialization {
@@ -247,57 +265,90 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
     })
 }
 
-#[pin_project]
-pub struct DatProtocol<O>
-where
-    O: DatObserver + Send,
-{
-    #[pin]
-    client: Client,
-    #[pin]
-    observer: O,
-    action: Option<Pin<Box<dyn futures::Future<Output = ()> + Send>>>,
+pub struct DatService {
+    stream: Pin<Box<dyn stream::Stream<Item = ChannelMessage>>>,
 }
 
-impl<O> futures::Stream for DatProtocol<O>
-where
-    O: DatObserver + Send,
-{
-    type Item = DatMessage;
+impl DatService {
+    pub fn new<O>(client: Client, observer: O) -> Self
+    where
+        O: DatObserver + Send + 'static,
+    {
+        let stream = stream::unfold(
+            (client, observer, true),
+            |(mut client, mut observer, first)| async move {
+                if first {
+                    observer.on_start(&mut client).await;
+                };
 
+                let response = client.reader().next().await?;
+
+                match &response {
+                    Err(err) => {
+                        log::debug!("Error {:?}. stopping stream", err);
+                        return None;
+                    }
+                    Ok(message) => match message.parse() {
+                        Ok(DatMessage::Feed(m)) => observer.on_feed(&mut client, &m).await,
+                        Ok(DatMessage::Handshake(m)) => {
+                            observer.on_handshake(&mut client, &m).await
+                        }
+                        Ok(DatMessage::Info(m)) => observer.on_info(&mut client, &m).await,
+                        Ok(DatMessage::Have(m)) => observer.on_have(&mut client, &m).await,
+                        Ok(DatMessage::Unhave(m)) => observer.on_unhave(&mut client, &m).await,
+                        Ok(DatMessage::Want(m)) => observer.on_want(&mut client, &m).await,
+                        Ok(DatMessage::Unwant(m)) => observer.on_unwant(&mut client, &m).await,
+                        Ok(DatMessage::Request(m)) => observer.on_request(&mut client, &m).await,
+                        Ok(DatMessage::Cancel(m)) => observer.on_cancel(&mut client, &m).await,
+                        Ok(DatMessage::Data(m)) => observer.on_data(&mut client, &m).await,
+                        Err(err) => log::debug!("Dropping message {:?} err {:?}", message, err),
+                    },
+                };
+
+                Some((response.unwrap(), (client, observer, false)))
+            },
+        );
+
+        Self {
+            stream: Box::pin(stream),
+        }
+    }
+}
+
+impl stream::Stream for DatService {
+    type Item = ChannelMessage;
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        use futures::future::FutureExt;
         use futures::stream::StreamExt;
 
-        let mut this = self.project();
+        self.stream.poll_next_unpin(cx)
+    }
+}
 
-        // Process any pending action
-        let current_action = this.action.take();
-        match current_action {
-            Some(mut action) => match action.poll_unpin(cx) {
-                Poll::Pending => {
-                    this.action = &mut Some(action);
-                    return Poll::Pending;
-                }
-                _ => (),
-            },
-            _ => (),
-        };
+pub struct SimpleDatObserver {
+    dat_key: colmeia_dat_core::HashUrl,
+}
 
-        let response = futures::ready!(this.client.reader().poll_next_unpin(cx));
+impl SimpleDatObserver {
+    pub fn new(dat_key: colmeia_dat_core::HashUrl) -> Self {
+        Self { dat_key }
+    }
+}
 
-        match response {
-            None => return Poll::Ready(None),
-            Some(Err(err)) => log::debug!("Dropping error {:?}", err),
-            Some(Ok(message)) => match message.parse() {
-                Ok(DatMessage::Feed(m)) => {
-                    (&mut this.observer).on_feed(&mut this.client, &m);
-                }
-                Err(err) => log::debug!("Dropping message {:?} err {:?}", message, err),
-                _ => todo!(),
-            },
-        };
+#[async_trait]
+impl DatObserver for SimpleDatObserver {
+    async fn on_start(&mut self, client: &mut Client) {
+        let mut message = proto::Feed::new();
+        message.set_discoveryKey(self.dat_key.discovery_key().to_vec());
+        println!("message {:?}", self.dat_key.discovery_key());
 
-        Poll::Pending
+        client
+            .writer()
+            .send(ChannelMessage::new(
+                1,
+                0,
+                message.write_to_bytes().expect("invalid dat message"),
+            ))
+            .await;
+        ping(client).await.expect("closed stream");
     }
 }

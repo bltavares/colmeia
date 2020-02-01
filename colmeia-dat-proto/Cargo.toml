@@ -10,7 +10,6 @@ log = '0.4.8'
 protobuf = '2.10.1'
 rand = '0.7.3'
 salsa20 = '0.4.0'
-pin-project = '0.4.8'
 async-trait = "0.1.22"
 
 [dependencies.simple-message-channels]

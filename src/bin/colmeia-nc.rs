@@ -26,18 +26,25 @@ fn main() {
       .await
       .expect("could not open address");
     let client_initialization = new_client(&key, tcp_stream).await;
-    let mut client = handshake(client_initialization)
+    println!(
+      "{:?}",
+      hex::encode(&client_initialization.dat_key().discovery_key())
+    );
+
+    let observer = SimpleDatObserver::new(client_initialization.dat_key().clone());
+    let client = handshake(client_initialization)
       .await
       .expect("could not handshake");
-    if let Some(Ok(message)) = client.reader().next().await {
-      eprintln!("{:?}", message);
-      eprintln!("{:?}", message.parse().expect("parsed message"));
-    }
-    ping(&mut client).await.expect("could not ping");
-    ping(&mut client).await.expect("could not ping");
-    if let Some(Ok(message)) = client.reader().next().await {
-      eprintln!("{:?}", message);
-      eprintln!("{:?}", message.parse().expect("parsed message"));
+
+    let mut service = DatService::new(client, observer);
+
+    while let Some(message) = service.next().await {
+      if let DatMessage::Feed(message) = message.parse().unwrap() {
+        eprintln!(
+          "Received message {:?}",
+          hex::encode(message.get_discoveryKey())
+        );
+      }
     }
   });
 }
