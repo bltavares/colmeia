@@ -1,6 +1,7 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
 use colmeia_dat_proto::*;
+use std::collections::HashMap;
 use std::net::SocketAddr;
 
 fn address() -> SocketAddr {
@@ -16,6 +17,66 @@ fn name() -> String {
   args.first().expect("must have dat name as argument").into()
 }
 
+pub struct SimpleDatClient {
+  handshake: SimpleDatHandshake,
+  dat_keys: HashMap<u64, Vec<u8>>,
+}
+
+impl SimpleDatClient {
+  pub fn new() -> Self {
+    Self {
+      dat_keys: HashMap::new(),
+      handshake: SimpleDatHandshake::new(),
+    }
+  }
+}
+
+#[async_trait]
+impl DatObserver for SimpleDatClient {
+  async fn on_feed(
+    &mut self,
+    client: &mut Client,
+    channel: u64,
+    message: &proto::Feed,
+  ) -> Option<()> {
+    if !self.dat_keys.contains_key(&channel) {
+      client
+        .writer()
+        .send(ChannelMessage::new(
+          channel,
+          0,
+          message.write_to_bytes().expect("invalid feed message"),
+        ))
+        .await
+        .ok()?;
+    }
+    self.handshake.on_feed(client, channel, message).await?;
+    self
+      .dat_keys
+      .insert(channel, message.get_discoveryKey().to_vec());
+    Some(())
+  }
+
+  async fn on_handshake(
+    &mut self,
+    client: &mut Client,
+    channel: u64,
+    message: &proto::Handshake,
+  ) -> Option<()> {
+    self
+      .handshake
+      .on_handshake(client, channel, message)
+      .await?;
+    Some(())
+  }
+
+  async fn on_finish(&mut self, _client: &mut Client) {
+    for (channel, key) in &self.dat_keys {
+      eprintln!("collected info {:?} dat://{:?}", channel, hex::encode(&key));
+    }
+  }
+}
+
 fn main() {
   env_logger::init();
 
@@ -26,18 +87,20 @@ fn main() {
       .await
       .expect("could not open address");
     let client_initialization = new_client(&key, tcp_stream).await;
-    let mut client = handshake(client_initialization)
+    let client = handshake(client_initialization)
       .await
       .expect("could not handshake");
-    if let Some(Ok(message)) = client.reader().next().await {
-      eprintln!("{:?}", message);
-      eprintln!("{:?}", message.parse().expect("parsed message"));
-    }
-    ping(&mut client).await.expect("could not ping");
-    ping(&mut client).await.expect("could not ping");
-    if let Some(Ok(message)) = client.reader().next().await {
-      eprintln!("{:?}", message);
-      eprintln!("{:?}", message.parse().expect("parsed message"));
+
+    let observer = SimpleDatClient::new();
+    let mut service = DatService::new(client, observer);
+
+    while let Some(message) = service.next().await {
+      if let DatMessage::Feed(message) = message.parse().unwrap() {
+        eprintln!(
+          "Received message {:?}",
+          hex::encode(message.get_discoveryKey())
+        );
+      }
     }
   });
 }

@@ -14,6 +14,8 @@ members = [
 [dependencies]
 futures = '0.3'
 env_logger = '0.7.1'
+async-trait = '*'
+hex = '*'
 
 [dependencies.colmeia-dat-mdns]
 path = './colmeia-dat-mdns'
