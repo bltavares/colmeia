@@ -44,6 +44,7 @@ Versions for reference:
 - [discovery-channel 5.5.1](https://github.com/maxogden/discovery-channel/tree/v5.5.1)
 - [dns-discovery 6.2.3](https://github.com/mafintosh/dns-discovery/tree/v6.2.3)
 - [hypercore-protocol 6.9.0](https://github.com/mafintosh/hypercore-protocol/tree/v6.9.0)
+- [hyperdrive 9.14.5](https://github.com/mafintosh/hyperdrive/tree/v9.14.5)
 - [How dat works](https://datprotocol.github.io/how-dat-works/) website
 
 ### [hyperswarm](https://github.com/hyperswarm) compatibility
