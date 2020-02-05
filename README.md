@@ -19,7 +19,7 @@ Write a pure rust network stack compatible with dat, to be able to run it on des
 
 ## References
 
-### [dat](https://github.com/datproject/dat/tree/v13.13.1) compatibility
+### [dat 1](https://github.com/datproject/dat/tree/v13.13.1) compatibility
 
 Modules:
 
@@ -32,7 +32,10 @@ Modules:
   - [x] Read Encrypted
   - [x] Write Encrypted
   - [x] Add more methods and service handler
-  - [ ] **next** Integrate with hypercore
+- [ ] **wip** `colmeia-dat-hypercore-v7`
+  - [ ] Clone metadata into a hypercore feed
+- [ ] **next** `colmeia-hyperdrive-v9`
+  - [ ] Use metadata to clone content hypercore feed ([first block is content public key])(https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896)
 - [ ] `colmeia-dat-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
 - [ ] `colmeia-dat-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
@@ -44,10 +47,11 @@ Versions for reference:
 - [discovery-channel 5.5.1](https://github.com/maxogden/discovery-channel/tree/v5.5.1)
 - [dns-discovery 6.2.3](https://github.com/mafintosh/dns-discovery/tree/v6.2.3)
 - [hypercore-protocol 6.9.0](https://github.com/mafintosh/hypercore-protocol/tree/v6.9.0)
+- [hypercore 7.7.1](https://github.com/mafintosh/hypercore/tree/v7.7.1)
 - [hyperdrive 9.14.5](https://github.com/mafintosh/hyperdrive/tree/v9.14.5)
 - [How dat works](https://datprotocol.github.io/how-dat-works/) website
 
-### [hyperswarm](https://github.com/hyperswarm) compatibility
+### [hyperswarm](https://github.com/hyperswarm) & dat 2 compatibility
 
 New protocol is in development. No stable release of either beaker or `dat` available yet.
 Uses NOISE protocol and a different handshake.
@@ -77,6 +81,7 @@ Versions for reference: **TDB**
 - [ ] [Make merkle-treem-stream Send](https://github.com/datrs/merkle-tree-stream/pull/28)
 - [ ] [Make hypercore Send](https://github.com/datrs/hypercore/pull/95)
 - [ ] [Remove internal buffering on simple-message-channel to avoid bytes being dropped during handshake](https://github.com/datrs/simple-message-channels/pull/5)
+- Bumps to make `datrs/hypercore` compatible with `rand` and `-dalek` pre release (No patches yet)
 
 ## Utils
 
