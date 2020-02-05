@@ -1,0 +1,23 @@
+[package]
+name = 'colmeia-dat-hypercore-v7'
+version = '0.1.0'
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
+edition = '2018'
+
+[dependencies]
+random-access-storage = '2.0.0'
+failure = '0.1.6'
+random-access-memory = '1.0.0'
+async-trait = '0.1.24'
+async-std = '1.5.0'
+
+[dependencies.bitfield-rle]
+git = 'https://github.com/datrs/bitfield-rle'
+
+[dependencies.colmeia-dat-proto]
+path = '../colmeia-dat-proto'
+
+[dependencies.hypercore]
+version = '0.10.0'
+git = 'https://github.com/bltavares/hypercore'
+branch = 'wip'

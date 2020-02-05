@@ -22,7 +22,7 @@ branch = 'remove-bufferin'
 path = '../colmeia-dat-core'
 
 [dependencies.async-std]
-version = '1.4.0'
+version = '1.5.0'
 features = ['unstable']
 
 [build-dependencies]

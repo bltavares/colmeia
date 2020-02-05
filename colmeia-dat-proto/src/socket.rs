@@ -26,6 +26,9 @@ impl CloneableStream {
 impl AsyncRead for CloneableStream {
     fn poll_read(self: Pin<&mut Self>, cx: &mut Context, buf: &mut [u8]) -> Poll<Result<usize>> {
         let content = futures::ready!(Pin::new(&mut &*self.socket).poll_read(cx, buf))?;
+        if content == 0 {
+            return Poll::Ready(Ok(content));
+        }
         log::debug!("content to read {:?}", content);
         log::debug!("original content {:?}", &buf[..content]);
 

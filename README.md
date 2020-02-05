@@ -72,6 +72,12 @@ Versions for reference: **TDB**
 - [ ] `colmeia-resolve`: converts a `.well-known/dat`  or DNS TXT [into a hash](https://beakerbrowser.com/docs/guides/use-a-domain-name-with-dat)
 - [ ] `colmeia-network`: Network connection pool manager, allowing to use other modules to fetch information
 
+## Relevant patches upstream
+
+- [ ] [Make merkle-treem-stream Send](https://github.com/datrs/merkle-tree-stream/pull/28)
+- [ ] [Make hypercore Send](https://github.com/datrs/hypercore/pull/95)
+- [ ] [Remove internal buffering on simple-message-channel to avoid bytes being dropped during handshake](https://github.com/datrs/simple-message-channels/pull/5)
+
 ## Utils
 
 ### Find a local peer

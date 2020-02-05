@@ -425,6 +425,14 @@ impl SimpleDatHandshake {
             handshakes: HashMap::new(),
         }
     }
+
+    pub fn handshakes(&self) -> &HashMap<u64, proto::Handshake> {
+        &self.handshakes
+    }
+
+    pub fn feeds(&self) -> &HashMap<u64, proto::Feed> {
+        &self.feeds
+    }
 }
 
 impl Default for SimpleDatHandshake {
@@ -442,6 +450,22 @@ impl DatObserver for SimpleDatHandshake {
         message: &proto::Feed,
     ) -> Option<()> {
         log::debug!("Feed received {:?} {:?}", channel, message);
+
+        // Initial channel is sent as part of the protocol negotiation.
+        // We must initialize feeds from there on
+        if channel > 0 {
+            client
+                .writer()
+                .send(ChannelMessage::new(
+                    channel,
+                    0,
+                    message
+                        .write_to_bytes()
+                        .expect("unable to re-encode received feed"),
+                ))
+                .await
+                .ok()?;
+        }
 
         self.feeds.insert(channel, message.clone());
         log::debug!("Preparing to send encrypted handshake");
