@@ -94,6 +94,17 @@ impl Client {
             .await
             .ok()
     }
+
+    pub async fn request(&mut self, channel: u64, message: &proto::Request) -> Option<()> {
+        self.writer()
+            .send(ChannelMessage::new(
+                channel,
+                7,
+                message.write_to_bytes().expect("not a valid request"),
+            ))
+            .await
+            .ok()
+    }
 }
 
 // TODO macro?

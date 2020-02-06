@@ -43,6 +43,13 @@ impl<Storage> DatProtocolEvents for PeeredHyperdrive<Storage>
 where
     Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
 {
+    async fn on_finish(&mut self, _client: &mut Client) {
+        println!("Metadata audit: {:?}", self.metadata.audit());
+        println!("Metadata len: {:?}", self.metadata.len());
+        if let Some(ref mut content) = self.content {
+            println!("Conent audit: {:?}", content.audit());
+        }
+    }
     async fn on_feed(
         &mut self,
         client: &mut Client,
@@ -78,13 +85,6 @@ where
         Some(())
     }
 
-    async fn on_finish(&mut self, _client: &mut Client) {
-        println!("Metadata audit: {:?}", self.metadata.audit());
-        if let Some(ref mut content) = self.content {
-            println!("Conent audit: {:?}", content.audit());
-        }
-    }
-
     async fn on_have(
         &mut self,
         client: &mut Client,
@@ -98,12 +98,29 @@ where
         self.metadata.on_have(client, channel, message).await?;
         Some(())
     }
+
+    async fn on_data(
+        &mut self,
+        client: &mut Client,
+        channel: u64,
+        message: &proto::Data,
+    ) -> Option<()> {
+        if channel > 1 {
+            // TODO implement content handshake
+            return None;
+        }
+        self.metadata.on_data(client, channel, message).await?;
+        Some(())
+    }
 }
 
 struct PeeredHypercore<Storage>
 where
     Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
 {
+    // TODO
+    // Should be shared between multiple peered hypercore feeds
+    // Arc RW?
     feed: hypercore::Feed<Storage>,
     channel: u64,
     handshake: SimpleDatHandshake,
@@ -252,7 +269,49 @@ where
         }
         // .expect("invalid bitfield");
 
-        // SEND WANT
+        // SEND REQUEST
+        // TODO loop on length
+        let mut message = proto::Request::new();
+        message.set_index(0);
+        message.set_bytes(1024);
+        message.set_hash(true);
+        message.set_nodes(self.feed.digest(0) as u64);
+        client.request(channel, &message).await?;
+        Some(())
+    }
+
+    async fn on_data(
+        &mut self,
+        _client: &mut Client,
+        channel: u64,
+        message: &proto::Data,
+    ) -> Option<()> {
+        let proof = hypercore::Proof {
+            index: message.get_index() as usize,
+            nodes: message
+                .get_nodes()
+                .iter()
+                .map(|node| {
+                    hypercore::Node::new(
+                        node.get_index() as usize,
+                        node.get_hash().to_vec(),
+                        node.get_size() as usize,
+                    )
+                })
+                .collect(),
+            signature: hypercore::Signature::from_bytes(message.get_signature()).ok(),
+        };
+        self.feed
+            .put(
+                message.get_index() as usize,
+                if message.has_value() {
+                    Some(message.get_value())
+                } else {
+                    None
+                },
+                proof,
+            )
+            .expect("could not write data to feed");
         Some(())
     }
 }
