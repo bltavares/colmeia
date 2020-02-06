@@ -72,11 +72,33 @@ impl Client {
     pub fn writer(&mut self) -> &mut Writer<BufWriter<socket::CloneableStream>> {
         &mut self.writer
     }
+
+    pub async fn have(&mut self, channel: u64, message: &proto::Have) -> Option<()> {
+        self.writer()
+            .send(ChannelMessage::new(
+                channel,
+                3,
+                message.write_to_bytes().expect("not a valid have"),
+            ))
+            .await
+            .ok()
+    }
+
+    pub async fn want(&mut self, channel: u64, message: &proto::Want) -> Option<()> {
+        self.writer()
+            .send(ChannelMessage::new(
+                channel,
+                5,
+                message.write_to_bytes().expect("not a valid want"),
+            ))
+            .await
+            .ok()
+    }
 }
 
 // TODO macro?
 #[async_trait]
-pub trait DatObserver {
+pub trait DatProtocolEvents {
     async fn on_start(&mut self, _client: &mut Client) -> Option<()> {
         log::debug!("Starting");
         Some(())
@@ -305,7 +327,7 @@ async fn should_finish<O, R: std::fmt::Debug>(
     result: Option<R>,
 ) -> Option<R>
 where
-    O: DatObserver + Send + 'static,
+    O: DatProtocolEvents + Send + 'static,
 {
     log::debug!("Result: {:?}", result);
     if result.is_none() {
@@ -319,7 +341,7 @@ where
 impl DatService {
     pub fn new<O>(client: Client, observer: O) -> Self
     where
-        O: DatObserver + Send + 'static,
+        O: DatProtocolEvents + Send + 'static,
     {
         let stream = stream::unfold(
             (client, observer, true),
@@ -442,7 +464,7 @@ impl Default for SimpleDatHandshake {
 }
 
 #[async_trait]
-impl DatObserver for SimpleDatHandshake {
+impl DatProtocolEvents for SimpleDatHandshake {
     async fn on_feed(
         &mut self,
         client: &mut Client,

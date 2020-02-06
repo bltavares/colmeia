@@ -1,6 +1,6 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use colmeia_dat_hypercore_v7::*;
+use colmeia_dat1::*;
 use std::net::SocketAddr;
 
 fn address() -> SocketAddr {
@@ -39,7 +39,7 @@ fn main() {
             .await
             .expect("could not handshake");
 
-        let observer = HypercoreV7Client::new(public_key);
+        let observer = PeeredHyperdrive::new(public_key);
         let mut service = DatService::new(client, observer);
 
         while let Some(message) = service.next().await {

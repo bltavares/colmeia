@@ -32,9 +32,9 @@ Modules:
   - [x] Read Encrypted
   - [x] Write Encrypted
   - [x] Add more methods and service handler
-- [ ] **wip** `colmeia-dat-hypercore-v7`
+- [ ] **wip** `colmeia-dat1`
   - [ ] Clone metadata into a hypercore feed
-- [ ] **next** `colmeia-hyperdrive-v9`
+  - [ ] Hypercore and Hyperfeed impl
   - [ ] Use metadata to clone content hypercore feed ([first block is content public key])(https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896)
 - [ ] `colmeia-dat-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
 - [ ] `colmeia-dat-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
@@ -84,6 +84,10 @@ Versions for reference: **TDB**
 - Bumps to make `datrs/hypercore` compatible with `rand` and `-dalek` pre release (No patches yet)
 
 ## Utils
+
+```
+Local dat2: be41e3d43d054982e14dfc60281d9d4425ab5d4b0b280a355b7927869ca08fc5
+```
 
 ### Find a local peer
 

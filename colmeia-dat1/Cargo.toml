@@ -1,5 +1,5 @@
 [package]
-name = 'colmeia-dat-hypercore-v7'
+name = 'colmeia-dat1'
 version = '0.1.0'
 authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
