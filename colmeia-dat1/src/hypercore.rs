@@ -200,6 +200,7 @@ where
                 .collect(),
             signature: hypercore::Signature::from_bytes(message.get_signature()).ok(),
         };
+
         self.feed
             .put(
                 message.get_index() as usize,
