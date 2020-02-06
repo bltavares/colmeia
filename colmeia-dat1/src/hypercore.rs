@@ -157,11 +157,12 @@ where
 
         // SEND REQUEST
         // TODO loop on length
+        // Use missing data from feed
         let mut message = proto::Request::new();
         message.set_index(0);
-        message.set_bytes(1024);
+        message.set_bytes(1024); // Select size?
         message.set_hash(true);
-        message.set_nodes(self.feed.digest(0) as u64);
+        message.set_nodes(self.feed.digest(0) as u64); // how to get nodes?!
         client.request(channel, &message).await?;
         Some(())
     }
