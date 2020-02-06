@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-use colmeia_dat_core as core;
+use colmeia_dat1_core as core;
 
 pub mod announce;
 pub mod locate;

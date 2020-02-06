@@ -1,5 +1,5 @@
 [package]
-name = 'colmeia-dat-mdns'
+name = 'colmeia-dat1-mdns'
 version = '0.1.0'
 authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
@@ -12,8 +12,8 @@ base64 = '0.11.0'
 log = '0.4.8'
 rand = '0.7.3'
 
-[dependencies.colmeia-dat-core]
-path = '../colmeia-dat-core'
+[dependencies.colmeia-dat1-core]
+path = '../colmeia-dat1-core'
 
 [dependencies.async-std]
 version = '1.5.0'

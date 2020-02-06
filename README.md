@@ -23,11 +23,11 @@ Write a pure rust network stack compatible with dat, to be able to run it on des
 
 Modules:
 
-- [x] `colmeia-dat-mdns`: based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
+- [x] `colmeia-dat1-mdns`: based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
   - [x] `Locator`: stream to find dat members in the network
   - [x] `Announcer`: stream that announces a dat in the network
   - [x] `Mdns`: announces and find dat in the network
-- [x] `colmeia-dat-proto`: Parses DAT v1 wire protocol
+- [x] `colmeia-dat1-proto`: Parses DAT v1 wire protocol
   - [x] Handshake
   - [x] Read Encrypted
   - [x] Write Encrypted
@@ -36,8 +36,8 @@ Modules:
   - [ ] Clone metadata into a hypercore feed
   - [ ] Hypercore and Hyperfeed impl
   - [ ] Use metadata to clone content hypercore feed ([first block is content public key])(https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896)
-- [ ] `colmeia-dat-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
-- [ ] `colmeia-dat-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
+- [ ] `colmeia-dat1-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
+- [ ] `colmeia-dat1-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
 Versions for reference:
 

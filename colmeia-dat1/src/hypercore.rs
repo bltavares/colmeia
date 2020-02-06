@@ -1,4 +1,4 @@
-pub use colmeia_dat_proto::*;
+pub use colmeia_dat1_proto::*;
 
 pub struct PeeredHypercore<Storage>
 where

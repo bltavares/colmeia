@@ -1,4 +1,4 @@
-use colmeia_dat_proto::*;
+use colmeia_dat1_proto::*;
 
 use crate::hypercore::PeeredHypercore;
 

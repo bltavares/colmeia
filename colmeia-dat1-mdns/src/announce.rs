@@ -1,5 +1,5 @@
 use async_std::net::UdpSocket as AsyncUdpSocket;
-use colmeia_dat_core as core;
+use colmeia_dat1_core as core;
 use futures::stream::{self, StreamExt};
 use std::net::{SocketAddr, UdpSocket};
 use std::pin::Pin;
