@@ -12,6 +12,7 @@ where
     handshake: SimpleDatHandshake,
     remote_bitfield: hypercore::bitfield::Bitfield,
     remote_length: usize,
+    hashed: bool,
 }
 
 impl<Storage> std::ops::Deref for PeeredHypercore<Storage>
@@ -34,7 +35,7 @@ where
 }
 
 impl PeeredHypercore<random_access_memory::RandomAccessMemory> {
-    pub fn new(channel: u64, public_key: hypercore::PublicKey) -> Self {
+    pub fn new(channel: u64, public_key: hypercore::PublicKey, hashed: bool) -> Self {
         let feed = hypercore::Feed::builder(
             public_key,
             hypercore::Storage::new_memory().expect("could not page feed memory"),
@@ -45,6 +46,7 @@ impl PeeredHypercore<random_access_memory::RandomAccessMemory> {
         Self {
             feed,
             channel,
+            hashed,
             handshake: SimpleDatHandshake::default(),
             remote_bitfield: hypercore::bitfield::Bitfield::default(),
             remote_length: 0,
@@ -57,6 +59,16 @@ impl<Storage> DatProtocolEvents for PeeredHypercore<Storage>
 where
     Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
 {
+    async fn on_feed(
+        &mut self,
+        client: &mut Client,
+        channel: u64,
+        message: &proto::Feed,
+    ) -> Option<()> {
+        self.handshake.on_feed(client, channel, message).await?;
+        Some(())
+    }
+
     async fn on_handshake(
         &mut self,
         client: &mut Client,
@@ -161,7 +173,7 @@ where
         let mut message = proto::Request::new();
         message.set_index(0);
         message.set_bytes(1024); // Select size?
-        message.set_hash(true);
+        message.set_hash(self.hashed); // What is this?
         message.set_nodes(self.feed.digest(0) as u64); // how to get nodes?!
         client.request(channel, &message).await?;
         Some(())

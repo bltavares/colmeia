@@ -23,7 +23,7 @@ where
 // TODO make it generic if possible
 impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     pub fn new(public_key: hypercore::PublicKey) -> Self {
-        let metadata = PeeredHypercore::new(0, public_key);
+        let metadata = PeeredHypercore::new(0, public_key, false);
         Self {
             metadata,
             content: None,
@@ -32,24 +32,20 @@ impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     }
 
     pub fn initialize_content_feed(&mut self, public_key: hypercore::PublicKey) {
-        if self.content.is_some() {
-            panic!("double initialization of content")
+        if let None = self.content {
+            self.content = Some(PeeredHypercore::new(1, public_key, true));
         }
-
-        self.content = Some(PeeredHypercore::new(1, public_key));
     }
 }
 
 #[async_trait]
-impl<Storage> DatProtocolEvents for PeeredHyperdrive<Storage>
-where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
-{
+impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     async fn on_finish(&mut self, _client: &mut Client) {
         println!("Metadata audit: {:?}", self.metadata.audit());
         println!("Metadata len: {:?}", self.metadata.len());
         if let Some(ref mut content) = self.content {
-            println!("Conent audit: {:?}", content.audit());
+            println!("Content audit: {:?}", content.audit());
+            println!("Content lent: {:?}", content.len());
         }
     }
     async fn on_feed(
@@ -58,14 +54,16 @@ where
         channel: u64,
         message: &proto::Feed,
     ) -> Option<()> {
-        if channel == 0 {
-            self.metadata.on_feed(client, channel, message).await?;
-        } else if channel == 1 {
-            self.delay_feed_content = Some(message.clone());
-            eprintln!("Ignoring feed {:?} @ {:?}", message, channel);
-        } else {
-            // TOO MANY FEEDS
-            return None;
+        match channel {
+            0 => self.metadata.on_feed(client, channel, message).await?,
+            1 => {
+                if let Some(ref mut content) = self.content {
+                    content.on_feed(client, channel, message).await;
+                } else {
+                    self.delay_feed_content = Some(message.clone());
+                }
+            }
+            _ => return None,
         }
 
         Some(())
@@ -77,12 +75,11 @@ where
         channel: u64,
         message: &proto::Handshake,
     ) -> Option<()> {
-        if channel > 1 {
-            // TODO implement content handshake
-            return None;
+        match channel {
+            // Only the first feed sends a handshake on hyperdrive v9
+            0 => self.metadata.on_handshake(client, channel, message).await?,
+            _ => return None,
         }
-
-        self.metadata.on_handshake(client, channel, message).await?;
 
         Some(())
     }
@@ -93,11 +90,15 @@ where
         channel: u64,
         message: &proto::Have,
     ) -> Option<()> {
-        if channel > 1 {
-            // TODO implement content handshake
-            return None;
+        match channel {
+            0 => self.metadata.on_have(client, channel, message).await?,
+            1 => {
+                if let Some(ref mut content) = self.content {
+                    content.on_have(client, channel, message).await;
+                }
+            }
+            _ => return None,
         }
-        self.metadata.on_have(client, channel, message).await?;
         Some(())
     }
 
@@ -107,11 +108,33 @@ where
         channel: u64,
         message: &proto::Data,
     ) -> Option<()> {
-        if channel > 1 {
-            // TODO implement content handshake
-            return None;
+        match channel {
+            0 => self.metadata.on_data(client, channel, message).await?,
+            1 => {
+                if let Some(ref mut content) = self.content {
+                    content.on_data(client, channel, message).await;
+                }
+            }
+            _ => return None,
         }
-        self.metadata.on_data(client, channel, message).await?;
+
+        if let None = self.content {
+            if let Ok(Some(initial_metadata)) = self.metadata.get(0) {
+                let public_key = hypercore::PublicKey::from_bytes(&initial_metadata[0..32])
+                    .expect("invalid content key stored in metadata");
+                self.initialize_content_feed(public_key);
+                let delayed_message = self.delay_feed_content.take();
+                if let Some(ref mut content) = self.content {
+                    content
+                        .on_feed(client, 1, &delayed_message.unwrap())
+                        .await?;
+                    // Simulate a handshake to keep going
+                    content
+                        .on_handshake(client, 1, &proto::Handshake::default())
+                        .await?;
+                }
+            }
+        }
         Some(())
     }
 }
