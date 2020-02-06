@@ -1,7 +1,7 @@
 use async_std::net::{TcpListener, TcpStream};
 use async_std::prelude::FutureExt;
 use async_std::stream::StreamExt;
-use colmeia_dat_proto::*;
+use colmeia_dat1_proto::*;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -84,7 +84,7 @@ fn name() -> String {
 }
 
 async fn lan(dat_url: String, address: SocketAddr) {
-    let mut mdns = colmeia_dat_mdns::Mdns::new(&dat_url).expect("could not start mdns");
+    let mut mdns = colmeia_dat1_mdns::Mdns::new(&dat_url).expect("could not start mdns");
     mdns.with_announcer(address.port())
         .with_location(Duration::from_secs(60));
     while let Some(peer) = mdns.next().await {

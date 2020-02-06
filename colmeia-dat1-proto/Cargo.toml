@@ -1,5 +1,5 @@
 [package]
-name = 'colmeia-dat-proto'
+name = 'colmeia-dat1-proto'
 version = '0.1.0'
 authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
@@ -18,8 +18,8 @@ version = '0.1.0'
 git = 'https://github.com/bltavares/simple-message-channels'
 branch = 'remove-bufferin'
 
-[dependencies.colmeia-dat-core]
-path = '../colmeia-dat-core'
+[dependencies.colmeia-dat1-core]
+path = '../colmeia-dat1-core'
 
 [dependencies.async-std]
 version = '1.5.0'

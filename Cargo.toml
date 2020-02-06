@@ -6,9 +6,9 @@ edition = '2018'
 
 [workspace]
 members = [
-    'colmeia-dat-mdns',
-    'colmeia-dat-proto',
-    'colmeia-dat-core',
+    'colmeia-dat1-mdns',
+    'colmeia-dat1-proto',
+    'colmeia-dat1-core',
     'colmeia-dat1',
 ]
 
@@ -17,18 +17,18 @@ futures = '0.3'
 env_logger = '0.7.1'
 hex = '*'
 
-[dependencies.colmeia-dat-mdns]
-path = 'colmeia-dat-mdns'
+[dependencies.colmeia-dat1-mdns]
+path = 'colmeia-dat1-mdns'
 
-[dependencies.colmeia-dat-proto]
-path = 'colmeia-dat-proto'
+[dependencies.colmeia-dat1-proto]
+path = 'colmeia-dat1-proto'
 
 [dependencies.async-std]
 version = '1.5.0'
 features = ['unstable']
 
-[dependencies.colmeia-dat-core]
-path = 'colmeia-dat-core'
+[dependencies.colmeia-dat1-core]
+path = 'colmeia-dat1-core'
 
 [dependencies.colmeia-dat1]
 path = 'colmeia-dat1'

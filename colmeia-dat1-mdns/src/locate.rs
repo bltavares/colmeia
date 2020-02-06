@@ -9,7 +9,7 @@ use trust_dns_proto::op::Message;
 use trust_dns_proto::rr::RData::TXT;
 
 use crate::socket;
-use colmeia_dat_core as core;
+use colmeia_dat1_core as core;
 
 fn packet(dat_url: &str) -> Vec<u8> {
   use std::str::FromStr;

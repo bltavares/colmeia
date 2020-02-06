@@ -1,7 +1,7 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
 pub use async_trait::async_trait;
-use colmeia_dat_core::DatUrlResolution;
+use colmeia_dat1_core::DatUrlResolution;
 use futures::io::{AsyncWriteExt, BufReader, BufWriter};
 use futures::stream;
 pub use protobuf::Message;
@@ -230,18 +230,18 @@ pub struct ClientInitialization {
     bare_writer: Writer<socket::CloneableStream>,
     upgradable_reader: socket::CloneableStream,
     upgradable_writer: socket::CloneableStream,
-    dat_key: colmeia_dat_core::HashUrl,
+    dat_key: colmeia_dat1_core::HashUrl,
     writer_socket: socket::CloneableStream,
 }
 
 impl ClientInitialization {
-    pub fn dat_key(&self) -> &colmeia_dat_core::HashUrl {
+    pub fn dat_key(&self) -> &colmeia_dat1_core::HashUrl {
         &self.dat_key
     }
 }
 
 pub async fn new_client(key: &str, tcp_stream: TcpStream) -> ClientInitialization {
-    let dat_key = colmeia_dat_core::parse(&key).expect("invalid dat argument");
+    let dat_key = colmeia_dat1_core::parse(&key).expect("invalid dat argument");
 
     let dat_key = match dat_key {
         DatUrlResolution::HashUrl(result) => result,

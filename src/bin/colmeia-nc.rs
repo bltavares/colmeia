@@ -1,6 +1,6 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use colmeia_dat_proto::*;
+use colmeia_dat1_proto::*;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 
