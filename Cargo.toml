@@ -9,23 +9,26 @@ members = [
     'colmeia-dat-mdns',
     'colmeia-dat-proto',
     'colmeia-dat-core',
+    'colmeia-dat1',
 ]
 
 [dependencies]
 futures = '0.3'
 env_logger = '0.7.1'
-async-trait = '*'
 hex = '*'
 
 [dependencies.colmeia-dat-mdns]
-path = './colmeia-dat-mdns'
+path = 'colmeia-dat-mdns'
 
 [dependencies.colmeia-dat-proto]
-path = './colmeia-dat-proto'
+path = 'colmeia-dat-proto'
 
 [dependencies.async-std]
-version = '1.4.0'
+version = '1.5.0'
 features = ['unstable']
 
 [dependencies.colmeia-dat-core]
-path = './colmeia-dat-core'
+path = 'colmeia-dat-core'
+
+[dependencies.colmeia-dat1]
+path = 'colmeia-dat1'

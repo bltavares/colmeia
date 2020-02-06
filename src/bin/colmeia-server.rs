@@ -27,7 +27,7 @@ impl SimpleDatServer {
 }
 
 #[async_trait]
-impl DatObserver for SimpleDatServer {
+impl DatProtocolEvents for SimpleDatServer {
     async fn on_feed(
         &mut self,
         client: &mut Client,

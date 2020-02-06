@@ -72,11 +72,44 @@ impl Client {
     pub fn writer(&mut self) -> &mut Writer<BufWriter<socket::CloneableStream>> {
         &mut self.writer
     }
+
+    pub async fn have(&mut self, channel: u64, message: &proto::Have) -> Option<()> {
+        self.writer()
+            .send(ChannelMessage::new(
+                channel,
+                3,
+                message.write_to_bytes().expect("not a valid have"),
+            ))
+            .await
+            .ok()
+    }
+
+    pub async fn want(&mut self, channel: u64, message: &proto::Want) -> Option<()> {
+        self.writer()
+            .send(ChannelMessage::new(
+                channel,
+                5,
+                message.write_to_bytes().expect("not a valid want"),
+            ))
+            .await
+            .ok()
+    }
+
+    pub async fn request(&mut self, channel: u64, message: &proto::Request) -> Option<()> {
+        self.writer()
+            .send(ChannelMessage::new(
+                channel,
+                7,
+                message.write_to_bytes().expect("not a valid request"),
+            ))
+            .await
+            .ok()
+    }
 }
 
 // TODO macro?
 #[async_trait]
-pub trait DatObserver {
+pub trait DatProtocolEvents {
     async fn on_start(&mut self, _client: &mut Client) -> Option<()> {
         log::debug!("Starting");
         Some(())
@@ -305,7 +338,7 @@ async fn should_finish<O, R: std::fmt::Debug>(
     result: Option<R>,
 ) -> Option<R>
 where
-    O: DatObserver + Send + 'static,
+    O: DatProtocolEvents + Send + 'static,
 {
     log::debug!("Result: {:?}", result);
     if result.is_none() {
@@ -319,7 +352,7 @@ where
 impl DatService {
     pub fn new<O>(client: Client, observer: O) -> Self
     where
-        O: DatObserver + Send + 'static,
+        O: DatProtocolEvents + Send + 'static,
     {
         let stream = stream::unfold(
             (client, observer, true),
@@ -425,6 +458,14 @@ impl SimpleDatHandshake {
             handshakes: HashMap::new(),
         }
     }
+
+    pub fn handshakes(&self) -> &HashMap<u64, proto::Handshake> {
+        &self.handshakes
+    }
+
+    pub fn feeds(&self) -> &HashMap<u64, proto::Feed> {
+        &self.feeds
+    }
 }
 
 impl Default for SimpleDatHandshake {
@@ -434,7 +475,7 @@ impl Default for SimpleDatHandshake {
 }
 
 #[async_trait]
-impl DatObserver for SimpleDatHandshake {
+impl DatProtocolEvents for SimpleDatHandshake {
     async fn on_feed(
         &mut self,
         client: &mut Client,
@@ -442,6 +483,22 @@ impl DatObserver for SimpleDatHandshake {
         message: &proto::Feed,
     ) -> Option<()> {
         log::debug!("Feed received {:?} {:?}", channel, message);
+
+        // Initial channel is sent as part of the protocol negotiation.
+        // We must initialize feeds from there on
+        if channel > 0 {
+            client
+                .writer()
+                .send(ChannelMessage::new(
+                    channel,
+                    0,
+                    message
+                        .write_to_bytes()
+                        .expect("unable to re-encode received feed"),
+                ))
+                .await
+                .ok()?;
+        }
 
         self.feeds.insert(channel, message.clone());
         log::debug!("Preparing to send encrypted handshake");
