@@ -111,15 +111,36 @@ RUST_LOG=debug cargo run --bin colmeia-nc -- 127.0.0.1:3282  dat://460f04cf12c3b
 RUST_LOG=debug cargo run --bin colmeia-server -- 0.0.0.0:8787 dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
 ```
 
+### Clone from a single host
+
+```sh
+RUST_LOG=debug cargo run --bin colmeia-clone -- 192.168.15.173:3282 dat://6268b99fbacacea49c6bc3d4776b606db2aeadb3fa831342ba9f70d55c98929f
+```
+
 ### dat server debug mode
 
 ```sh
 DEBUG="dat*" npx dat share
 ```
 
-## Cross compilation
+## Android
 
-### Android
+### Direct compilation
+
+- **No root required**
+
+Inside termux, install `git` and `rust`:
+
+```sh
+apk install git
+apk install rust
+git clone https://github.com/bltavares/colmeia
+cd colmeia
+
+cargo run # your desired bin
+```
+
+### Cross Compilation
 
 [It works!](https://twitter.com/bltavares/status/1221587189668163584)
 

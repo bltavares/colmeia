@@ -57,6 +57,16 @@ impl<Storage> DatProtocolEvents for PeeredHypercore<Storage>
 where
     Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
 {
+    async fn on_feed(
+        &mut self,
+        client: &mut Client,
+        channel: u64,
+        message: &proto::Feed,
+    ) -> Option<()> {
+        self.handshake.on_feed(client, channel, message).await?;
+        Some(())
+    }
+
     async fn on_handshake(
         &mut self,
         client: &mut Client,
@@ -158,12 +168,11 @@ where
         // SEND REQUEST
         // TODO loop on length
         // Use missing data from feed
-        let mut message = proto::Request::new();
-        message.set_index(0);
-        message.set_bytes(1024); // Select size?
-        message.set_hash(true);
-        message.set_nodes(self.feed.digest(0) as u64); // how to get nodes?!
-        client.request(channel, &message).await?;
+        for index in 0..=message.get_start() {
+            let mut request = proto::Request::new();
+            request.set_index(index);
+            client.request(channel, &request).await?;
+        }
         Some(())
     }
 
@@ -188,6 +197,7 @@ where
                 .collect(),
             signature: hypercore::Signature::from_bytes(message.get_signature()).ok(),
         };
+
         self.feed
             .put(
                 message.get_index() as usize,
