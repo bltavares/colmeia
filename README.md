@@ -33,9 +33,11 @@ Modules:
   - [x] Write Encrypted
   - [x] Add more methods and service handler
 - [ ] **wip** `colmeia-dat1`
-  - [ ] Clone metadata into a hypercore feed
-  - [ ] Hypercore and Hyperfeed impl
-  - [ ] Use metadata to clone content hypercore feed ([first block is content public key])(https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896)
+  - [x] Clone metadata into a hypercore feed
+  - [x] Hypercore and Hyperfeed impl
+  - [x] Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896))
+  - [ ] Impl remaining replicate logic
+  - [ ] Create a `Dat` struct that discovers and creates peeredfeed interactions
 - [ ] `colmeia-dat1-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
 - [ ] `colmeia-dat1-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
