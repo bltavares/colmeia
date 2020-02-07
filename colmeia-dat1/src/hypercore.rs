@@ -12,7 +12,6 @@ where
     handshake: SimpleDatHandshake,
     remote_bitfield: hypercore::bitfield::Bitfield,
     remote_length: usize,
-    hashed: bool,
 }
 
 impl<Storage> std::ops::Deref for PeeredHypercore<Storage>
@@ -35,7 +34,7 @@ where
 }
 
 impl PeeredHypercore<random_access_memory::RandomAccessMemory> {
-    pub fn new(channel: u64, public_key: hypercore::PublicKey, hashed: bool) -> Self {
+    pub fn new(channel: u64, public_key: hypercore::PublicKey) -> Self {
         let feed = hypercore::Feed::builder(
             public_key,
             hypercore::Storage::new_memory().expect("could not page feed memory"),
@@ -46,7 +45,6 @@ impl PeeredHypercore<random_access_memory::RandomAccessMemory> {
         Self {
             feed,
             channel,
-            hashed,
             handshake: SimpleDatHandshake::default(),
             remote_bitfield: hypercore::bitfield::Bitfield::default(),
             remote_length: 0,
@@ -170,12 +168,11 @@ where
         // SEND REQUEST
         // TODO loop on length
         // Use missing data from feed
-        let mut message = proto::Request::new();
-        message.set_index(0);
-        message.set_bytes(1024); // Select size?
-        message.set_hash(self.hashed); // What is this?
-        message.set_nodes(self.feed.digest(0) as u64); // how to get nodes?!
-        client.request(channel, &message).await?;
+        for index in 0..=message.get_start() {
+            let mut request = proto::Request::new();
+            request.set_index(index);
+            client.request(channel, &request).await?;
+        }
         Some(())
     }
 

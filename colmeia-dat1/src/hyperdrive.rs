@@ -23,7 +23,7 @@ where
 // TODO make it generic if possible
 impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     pub fn new(public_key: hypercore::PublicKey) -> Self {
-        let metadata = PeeredHypercore::new(0, public_key, false);
+        let metadata = PeeredHypercore::new(0, public_key);
         Self {
             metadata,
             content: None,
@@ -33,7 +33,7 @@ impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
 
     pub fn initialize_content_feed(&mut self, public_key: hypercore::PublicKey) {
         if let None = self.content {
-            self.content = Some(PeeredHypercore::new(1, public_key, true));
+            self.content = Some(PeeredHypercore::new(1, public_key));
         }
     }
 }
@@ -45,7 +45,7 @@ impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMe
         println!("Metadata len: {:?}", self.metadata.len());
         if let Some(ref mut content) = self.content {
             println!("Content audit: {:?}", content.audit());
-            println!("Content lent: {:?}", content.len());
+            println!("Content len: {:?}", content.len());
         }
     }
     async fn on_feed(
@@ -120,7 +120,9 @@ impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMe
 
         if let None = self.content {
             if let Ok(Some(initial_metadata)) = self.metadata.get(0) {
-                let public_key = hypercore::PublicKey::from_bytes(&initial_metadata[0..32])
+                let content: crate::schema::Index =
+                    protobuf::parse_from_bytes(&initial_metadata).ok()?;
+                let public_key = hypercore::PublicKey::from_bytes(content.get_content())
                     .expect("invalid content key stored in metadata");
                 self.initialize_content_feed(public_key);
                 let delayed_message = self.delay_feed_content.take();

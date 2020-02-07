@@ -10,7 +10,7 @@ log = '0.4.8'
 protobuf = '2.10.1'
 rand = '0.7.3'
 salsa20 = '0.4.0'
-async-trait = "0.1.22"
+async-trait = "0.1.24"
 
 [dependencies.simple-message-channels]
 version = '0.1.0'
