@@ -97,7 +97,7 @@ where
         channel: u64,
         message: &proto::Want,
     ) -> Option<()> {
-        // We only reploy to multipla of 8192 in terms of offsets and lengths for want messages
+        // We only reploy to multiple of 8192 in terms of offsets and lengths for want messages
         // since this is much easier for the bitfield, in terms of paging.
         if (message.get_start() & 8191 != 0) || (message.get_length() & 8191 != 0) {
             return Some(());
@@ -112,12 +112,11 @@ where
             have.set_start(feed_length as u64);
             client.have(channel, &have).await?;
         }
-        // TODO expose bitfield
-        // TODO compress bitfield;
-        let rle = vec![]; // self
-                          //     .feed
-                          //     .bitfield
-                          //     .compress(message.get_start(), message.get_length());
+        let rle = self
+            .feed
+            .bitfield()
+            .compress(message.get_start() as usize, message.get_length() as usize)
+            .unwrap();
         let mut have = proto::Have::new();
         have.set_start(message.get_start());
         have.set_length(message.get_length());

@@ -20,8 +20,9 @@ path = '../colmeia-dat1-proto'
 
 [dependencies.hypercore]
 version = '0.10.0'
+# path = '../../datrs/hypercore'
 git = 'https://github.com/bltavares/hypercore'
-branch = 'wip'
+branch = 'bitfield-compress'
 
 [build-dependencies]
 protobuf-codegen-pure = '2.10.1'
