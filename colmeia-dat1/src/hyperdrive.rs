@@ -1,10 +1,66 @@
+use std::sync::{Arc, RwLock};
+
 use colmeia_dat1_proto::*;
 
 use crate::hypercore::PeeredHypercore;
 
+pub struct Hyperdrive<Storage>
+where
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+{
+    metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
+    content_storage: hypercore::Storage<Storage>,
+}
+
+pub fn in_memmory<Storage>(
+    public_key: hypercore::PublicKey,
+) -> Hyperdrive<
+    impl random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+> {
+    let metadata = hypercore::Feed::builder(
+        public_key,
+        hypercore::Storage::new_memory().expect("could not page feed memory"),
+    )
+    .build()
+    .expect("Could not start feed");
+
+    let content_storage =
+        hypercore::Storage::new_memory().expect("could not initialize the content storage");
+
+    Hyperdrive {
+        content_storage,
+        metadata: Arc::new(RwLock::new(metadata)),
+    }
+}
+
+pub fn in_disk<P: AsRef<std::path::PathBuf>>(
+    public_key: hypercore::PublicKey,
+    metadata: P,
+    content: P,
+) -> Hyperdrive<
+    impl random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+> {
+    let metadata = hypercore::Feed::builder(
+        public_key,
+        hypercore::Storage::new_disk(metadata.as_ref()).expect("could not page feed memory"),
+    )
+    .build()
+    .expect("Could not start feed");
+
+    let content_storage = hypercore::Storage::new_disk(content.as_ref())
+        .expect("could not initialize the content storage");
+
+    Hyperdrive {
+        content_storage,
+        metadata: Arc::new(RwLock::new(metadata)),
+    }
+}
+
 pub struct PeeredHyperdrive<Storage>
 where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
     metadata: PeeredHypercore<Storage>,
     content: Option<PeeredHypercore<Storage>>,
@@ -20,10 +76,16 @@ where
 // Readers only use what is provided on initialization.
 // }
 
-// TODO make it generic if possible
+// // TODO make it generic if possible
 impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     pub fn new(public_key: hypercore::PublicKey) -> Self {
-        let metadata = PeeredHypercore::new(0, public_key);
+        let feed = hypercore::Feed::builder(
+            public_key,
+            hypercore::Storage::new_memory().expect("could not page feed memory"),
+        )
+        .build()
+        .expect("Could not start feed");
+        let metadata = PeeredHypercore::new(0, Arc::new(RwLock::new(feed)));
         Self {
             metadata,
             content: None,
@@ -33,7 +95,13 @@ impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
 
     pub fn initialize_content_feed(&mut self, public_key: hypercore::PublicKey) {
         if let None = self.content {
-            self.content = Some(PeeredHypercore::new(1, public_key));
+            let feed = hypercore::Feed::builder(
+                public_key,
+                hypercore::Storage::new_memory().expect("could not page feed memory"),
+            )
+            .build()
+            .expect("Could not start feed");
+            self.content = Some(PeeredHypercore::new(1, Arc::new(RwLock::new(feed))));
         }
     }
 }
