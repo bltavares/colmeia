@@ -19,19 +19,9 @@ where
     Storage:
         random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
-    type Target = hypercore::Feed<Storage>;
+    type Target = Arc<RwLock<hypercore::Feed<Storage>>>;
     fn deref(&self) -> &Self::Target {
-        &self.feed.read().unwrap()
-    }
-}
-
-impl<Storage> std::ops::DerefMut for PeeredHypercore<Storage>
-where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.feed.write().unwrap()
+        &self.feed
     }
 }
 
@@ -104,7 +94,7 @@ where
         }
 
         let feed_length = self.feed.read().unwrap().len() - 1;
-        if self.feed.read().unwrap().has(feed_length) {
+        if self.feed.write().unwrap().has(feed_length) {
             // Eagerly send the length of the feed to the otherside
             // TODO: only send this if the remote is not wanting a region
             // where this is contained in

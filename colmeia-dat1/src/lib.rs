@@ -35,32 +35,44 @@ where
     discovery: Box<dyn Stream<Item = SocketAddr> + Unpin + Send>,
 }
 
-impl<Storage> Dat<Storage>
-where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
-{
-    pub fn readonly(key: HashUrl, listen_address: SocketAddr) -> Self {
+impl Dat<random_access_disk::RandomAccessDisk> {
+    pub fn in_disk<P: AsRef<std::path::PathBuf>>(
+        key: HashUrl,
+        listen_address: SocketAddr,
+        metadata: P,
+        content: P,
+    ) -> Self {
         let peers = Arc::new(RwLock::new(SegQueue::new()));
+        let hyperdrive = hyperdrive::in_disk(key.public_key().clone(), metadata, content);
         Self {
             key,
-            hyperdrive: hyperdrive::in_memmory(key.public_key().clone()),
+            hyperdrive,
             listen_address,
             peers,
             discovery: Box::new(stream::empty()),
         }
     }
+}
 
-    pub fn in_memory(&mut self) -> &mut Self {
-        self.hyperdrive = hyperdrive::in_memmory(self.key.public_key().clone());
-        self
+impl Dat<random_access_memory::RandomAccessMemory> {
+    pub fn in_memory(key: HashUrl, listen_address: SocketAddr) -> Self {
+        let peers = Arc::new(RwLock::new(SegQueue::new()));
+        let hyperdrive = hyperdrive::in_memmory(key.public_key().clone());
+        Self {
+            key,
+            hyperdrive,
+            listen_address,
+            peers,
+            discovery: Box::new(stream::empty()),
+        }
     }
+}
 
-    pub fn in_disk<P: AsRef<std::path::PathBuf>>(&mut self, metadata: P, content: P) -> &mut Self {
-        self.hyperdrive = hyperdrive::in_disk(self.key.public_key().clone(), metadata, content);
-        self
-    }
-
+impl<Storage> Dat<Storage>
+where
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+{
     pub fn lan(&self) -> impl Stream<Item = SocketAddr> {
         let mut mdns = colmeia_dat1_mdns::Mdns::new(self.key.clone());
         mdns.with_announcer(self.listen_address.port())

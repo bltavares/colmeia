@@ -26,7 +26,7 @@ fn main() {
     };
 
     async_std::task::block_on(async {
-        let mut dat = colmeia_dat1::Dat::readonly(dat_key, "0.0.0.0:3899".parse().unwrap());
+        let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:3899".parse().unwrap());
         dat.with_discovery(vec![dat.lan()]);
 
         // while let Some(_) = dat.next().await {

@@ -13,11 +13,9 @@ where
     content_storage: hypercore::Storage<Storage>,
 }
 
-pub fn in_memmory<Storage>(
+pub fn in_memmory(
     public_key: hypercore::PublicKey,
-) -> Hyperdrive<
-    impl random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
-> {
+) -> Hyperdrive<random_access_memory::RandomAccessMemory> {
     let metadata = hypercore::Feed::builder(
         public_key,
         hypercore::Storage::new_memory().expect("could not page feed memory"),
@@ -38,9 +36,7 @@ pub fn in_disk<P: AsRef<std::path::PathBuf>>(
     public_key: hypercore::PublicKey,
     metadata: P,
     content: P,
-) -> Hyperdrive<
-    impl random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
-> {
+) -> Hyperdrive<random_access_disk::RandomAccessDisk> {
     let metadata = hypercore::Feed::builder(
         public_key,
         hypercore::Storage::new_disk(metadata.as_ref()).expect("could not page feed memory"),
@@ -109,11 +105,14 @@ impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
 #[async_trait]
 impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     async fn on_finish(&mut self, _client: &mut Client) {
-        println!("Metadata audit: {:?}", self.metadata.audit());
-        println!("Metadata len: {:?}", self.metadata.len());
+        println!(
+            "Metadata audit: {:?}",
+            self.metadata.write().unwrap().audit()
+        );
+        println!("Metadata len: {:?}", self.metadata.read().unwrap().len());
         if let Some(ref mut content) = self.content {
-            println!("Content audit: {:?}", content.audit());
-            println!("Content len: {:?}", content.len());
+            println!("Content audit: {:?}", content.write().unwrap().audit());
+            println!("Content len: {:?}", content.write().unwrap().len());
         }
     }
     async fn on_feed(
@@ -187,7 +186,8 @@ impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMe
         }
 
         if let None = self.content {
-            if let Ok(Some(initial_metadata)) = self.metadata.get(0) {
+            let initial_metadata = self.metadata.write().unwrap().get(0);
+            if let Ok(Some(initial_metadata)) = initial_metadata {
                 let content: crate::schema::Index =
                     protobuf::parse_from_bytes(&initial_metadata).ok()?;
                 let public_key = hypercore::PublicKey::from_bytes(content.get_content())
