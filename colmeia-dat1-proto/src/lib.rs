@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 pub use async_trait::async_trait;
 pub use protobuf::Message;
@@ -284,21 +285,26 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
     let mut feed = proto::Feed::new();
     feed.set_discoveryKey(init.dat_key.discovery_key().to_vec());
     feed.set_nonce(nonce);
-    init.bare_writer
-        .send(ChannelMessage::new(
+    async_std::io::timeout(
+        Duration::from_secs(1),
+        init.bare_writer.send(ChannelMessage::new(
             0,
             0,
             feed.write_to_bytes().expect("invalid feed message"),
-        ))
-        .await
-        .ok()?;
+        )),
+    )
+    .await
+    .ok()?;
 
     log::debug!("Sent a nonce, upgrading write socket");
     init.upgradable_writer.upgrade(feed.get_nonce());
     let writer = Writer::new(BufWriter::new(init.upgradable_writer));
 
     log::debug!("Preparing to read feed nonce");
-    let received_feed = init.bare_reader.next().await?.ok()?;
+    let received_feed = async_std::future::timeout(Duration::from_secs(1), init.bare_reader.next())
+        .await
+        .ok()??
+        .ok()?;
     let parsed_feed = received_feed.parse().ok()?;
     let payload = match parsed_feed {
         DatMessage::Feed(payload) => payload,

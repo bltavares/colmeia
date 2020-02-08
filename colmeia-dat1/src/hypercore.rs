@@ -71,7 +71,6 @@ where
             .on_handshake(client, channel, message)
             .await?;
 
-        eprintln!("handshaken, sending want");
         let mut message = proto::Want::new();
         message.set_start(0);
         message.set_length(0); // must be in sizes of 8192 bytes

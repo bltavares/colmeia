@@ -14,6 +14,7 @@ async-std = '1.5.0'
 protobuf = '2.10.1'
 crossbeam-queue = '0.2.1'
 futures = '0.3'
+log = '0.4.8'
 
 [dependencies.colmeia-dat1-mdns]
 path = '../colmeia-dat1-mdns'

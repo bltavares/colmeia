@@ -111,9 +111,8 @@ where
                 .expect("could not bind server to the address");
 
             loop {
-                // TODO Spawn new connections without awaitng. how?
                 if let Ok((stream, remote_addrs)) = listener.accept().await {
-                    eprintln!("Received connection from {:?}", remote_addrs);
+                    log::debug!("Received connection from {:?}", remote_addrs);
                     peers.write().unwrap().push(PeerState::Connected(stream))
                 }
             }
@@ -126,20 +125,32 @@ where
                 let connection = peers.write().unwrap().pop();
                 match connection {
                     Ok(PeerState::Discovered(socket)) => {
-                        let stream = TcpStream::connect(socket).await.unwrap();
-                        peers.write().unwrap().push(PeerState::Connected(stream));
+                        let stream = TcpStream::connect(socket).await;
+                        if let Ok(stream) = stream {
+                            peers.write().unwrap().push(PeerState::Connected(stream));
+                        }
                     }
                     Ok(PeerState::Connected(stream)) => {
+                        log::error!("peeering");
+
                         let client_initialization = new_client(key.clone(), stream).await;
-                        let client = handshake(client_initialization)
-                            .await
-                            .expect("could not handshake");
-                        peers.write().unwrap().push(PeerState::Peered(client));
+                        let client = handshake(client_initialization).await;
+                        log::error!("peeering");
+
+                        if let Some(client) = client {
+                            // let event_writer = PeeredHyperdrive::new(key.public_key().clone());
+                            log::error!("peered");
+                            peers.write().unwrap().push(PeerState::Peered(client));
+                        }
                     }
                     Ok(PeerState::Peered(client)) => {
-                        eprintln!("Got a client working");
+                        log::warn!("peered");
+                        peers.write().unwrap().push(PeerState::Peered(client));
                     }
-                    Err(_) => task::sleep(Duration::from_secs(1)).await,
+                    Err(e) => {
+                        log::debug!("pop error {:?}", e);
+                        task::sleep(Duration::from_secs(1)).await
+                    }
                 }
             }
         });

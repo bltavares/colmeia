@@ -1,8 +1,3 @@
-use async_std::net::TcpStream;
-use async_std::stream::StreamExt;
-use colmeia_dat1::*;
-use std::net::SocketAddr;
-
 fn name() -> String {
     let args: Vec<String> = std::env::args().skip(1).collect();
     args.first().expect("must have dat name as argument").into()
@@ -25,11 +20,8 @@ fn main() {
         _ => panic!("invalid hash key"),
     };
 
-    async_std::task::block_on(async {
-        let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:3899".parse().unwrap());
-        dat.with_discovery(vec![dat.lan()]);
+    let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:3899".parse().unwrap());
+    dat.with_discovery(vec![dat.lan()]);
 
-        // while let Some(_) = dat.next().await {
-        // }
-    });
+    async_std::task::block_on(dat.sync());
 }

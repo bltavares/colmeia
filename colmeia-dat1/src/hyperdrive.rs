@@ -105,14 +105,14 @@ impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
 #[async_trait]
 impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
     async fn on_finish(&mut self, _client: &mut Client) {
-        println!(
+        log::debug!(
             "Metadata audit: {:?}",
             self.metadata.write().unwrap().audit()
         );
-        println!("Metadata len: {:?}", self.metadata.read().unwrap().len());
+        log::debug!("Metadata len: {:?}", self.metadata.read().unwrap().len());
         if let Some(ref mut content) = self.content {
-            println!("Content audit: {:?}", content.write().unwrap().audit());
-            println!("Content len: {:?}", content.write().unwrap().len());
+            log::debug!("Content audit: {:?}", content.write().unwrap().audit());
+            log::debug!("Content len: {:?}", content.write().unwrap().len());
         }
     }
     async fn on_feed(
