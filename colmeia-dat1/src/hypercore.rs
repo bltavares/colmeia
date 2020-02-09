@@ -1,13 +1,13 @@
+use std::sync::{Arc, RwLock};
+
 pub use colmeia_dat1_proto::*;
 
 pub struct PeeredHypercore<Storage>
 where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
-    // TODO
-    // Should be shared between multiple peered hypercore feeds
-    // Arc RW?
-    feed: hypercore::Feed<Storage>,
+    feed: Arc<RwLock<hypercore::Feed<Storage>>>,
     channel: u64,
     handshake: SimpleDatHandshake,
     remote_bitfield: hypercore::bitfield::Bitfield,
@@ -16,32 +16,21 @@ where
 
 impl<Storage> std::ops::Deref for PeeredHypercore<Storage>
 where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
-    type Target = hypercore::Feed<Storage>;
+    type Target = Arc<RwLock<hypercore::Feed<Storage>>>;
     fn deref(&self) -> &Self::Target {
         &self.feed
     }
 }
 
-impl<Storage> std::ops::DerefMut for PeeredHypercore<Storage>
+impl<Storage> PeeredHypercore<Storage>
 where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.feed
-    }
-}
-
-impl PeeredHypercore<random_access_memory::RandomAccessMemory> {
-    pub fn new(channel: u64, public_key: hypercore::PublicKey) -> Self {
-        let feed = hypercore::Feed::builder(
-            public_key,
-            hypercore::Storage::new_memory().expect("could not page feed memory"),
-        )
-        .build()
-        .expect("Could not start feed");
-
+    pub fn new(channel: u64, feed: Arc<RwLock<hypercore::Feed<Storage>>>) -> Self {
         Self {
             feed,
             channel,
@@ -55,7 +44,8 @@ impl PeeredHypercore<random_access_memory::RandomAccessMemory> {
 #[async_trait]
 impl<Storage> DatProtocolEvents for PeeredHypercore<Storage>
 where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send,
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
     async fn on_feed(
         &mut self,
@@ -81,7 +71,6 @@ where
             .on_handshake(client, channel, message)
             .await?;
 
-        eprintln!("handshaken, sending want");
         let mut message = proto::Want::new();
         message.set_start(0);
         message.set_length(0); // must be in sizes of 8192 bytes
@@ -103,8 +92,8 @@ where
             return Some(());
         }
 
-        let feed_length = self.feed.len() - 1;
-        if self.feed.has(feed_length) {
+        let feed_length = self.feed.read().unwrap().len() - 1;
+        if self.feed.write().unwrap().has(feed_length) {
             // Eagerly send the length of the feed to the otherside
             // TODO: only send this if the remote is not wanting a region
             // where this is contained in
@@ -114,6 +103,8 @@ where
         }
         let rle = self
             .feed
+            .read()
+            .unwrap()
             .bitfield()
             .compress(message.get_start() as usize, message.get_length() as usize)
             .unwrap();
@@ -198,6 +189,8 @@ where
         };
 
         self.feed
+            .write()
+            .unwrap()
             .put(
                 message.get_index() as usize,
                 if message.has_value() {

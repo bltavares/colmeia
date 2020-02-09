@@ -33,7 +33,14 @@ fn main() {
         let tcp_stream = TcpStream::connect(address)
             .await
             .expect("could not open address");
-        let client_initialization = new_client(&key, tcp_stream).await;
+        let dat_key = colmeia_dat1_core::parse(&key).expect("invalid dat argument");
+
+        let dat_key = match dat_key {
+            colmeia_dat1_core::DatUrlResolution::HashUrl(result) => result,
+            _ => panic!("invalid hash key"),
+        };
+
+        let client_initialization = new_client(dat_key, tcp_stream).await;
         let public_key = client_initialization.dat_key().public_key().clone();
         let client = handshake(client_initialization)
             .await

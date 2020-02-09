@@ -8,9 +8,19 @@ edition = '2018'
 random-access-storage = '2.0.0'
 failure = '0.1.6'
 random-access-memory = '1.0.0'
+random-access-disk = '0.8.0'
 async-trait = '0.1.24'
 async-std = '1.5.0'
 protobuf = '2.10.1'
+crossbeam-queue = '0.2.1'
+futures = '0.3'
+log = '0.4.8'
+
+[dependencies.colmeia-dat1-mdns]
+path = '../colmeia-dat1-mdns'
+
+[dependencies.colmeia-dat1-core]
+path = '../colmeia-dat1-core'
 
 [dependencies.bitfield-rle]
 git = 'https://github.com/datrs/bitfield-rle'
@@ -20,7 +30,6 @@ path = '../colmeia-dat1-proto'
 
 [dependencies.hypercore]
 version = '0.10.0'
-# path = '../../datrs/hypercore'
 git = 'https://github.com/bltavares/hypercore'
 branch = 'bitfield-compress'
 
