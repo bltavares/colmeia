@@ -265,6 +265,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "colmeia-dat1-ffi"
+version = "0.1.0"
+dependencies = [
+ "async-std 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "colmeia-dat1 0.1.0",
+ "colmeia-dat1-core 0.1.0",
+ "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "colmeia-dat1-mdns"
 version = "0.1.0"
 dependencies = [
