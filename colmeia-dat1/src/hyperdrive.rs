@@ -9,8 +9,30 @@ where
     Storage:
         random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
-    metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
-    content_storage: hypercore::Storage<Storage>,
+    pub(crate) metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
+    pub(crate) content: Option<Arc<RwLock<hypercore::Feed<Storage>>>>,
+    content_storage: Option<hypercore::Storage<Storage>>,
+}
+
+impl<Storage> Hyperdrive<Storage>
+where
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+{
+    pub fn readable_content_feed(
+        &mut self,
+        public_key: hypercore::PublicKey,
+    ) -> Arc<RwLock<hypercore::Feed<Storage>>> {
+        if let Some(storage) = self.content_storage.take() {
+            let feed = hypercore::Feed::builder(public_key, storage)
+                .build()
+                .expect("Could not start feed");
+
+            self.content = Some(Arc::new(RwLock::new(feed)));
+        }
+
+        self.content.as_ref().unwrap().clone()
+    }
 }
 
 pub fn in_memmory(
@@ -27,7 +49,8 @@ pub fn in_memmory(
         hypercore::Storage::new_memory().expect("could not initialize the content storage");
 
     Hyperdrive {
-        content_storage,
+        content_storage: Some(content_storage),
+        content: None,
         metadata: Arc::new(RwLock::new(metadata)),
     }
 }
@@ -48,7 +71,8 @@ pub fn in_disk<P: AsRef<std::path::PathBuf>>(
         .expect("could not initialize the content storage");
 
     Hyperdrive {
-        content_storage,
+        content_storage: Some(content_storage),
+        content: None,
         metadata: Arc::new(RwLock::new(metadata)),
     }
 }
@@ -59,6 +83,7 @@ where
         random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
     metadata: PeeredHypercore<Storage>,
+    hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
     content: Option<PeeredHypercore<Storage>>,
     delay_feed_content: Option<proto::Feed>,
 }
@@ -72,18 +97,25 @@ where
 // Readers only use what is provided on initialization.
 // }
 
-// // TODO make it generic if possible
-impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
-    pub fn new(public_key: hypercore::PublicKey) -> Self {
-        let feed = hypercore::Feed::builder(
-            public_key,
-            hypercore::Storage::new_memory().expect("could not page feed memory"),
-        )
-        .build()
-        .expect("Could not start feed");
-        let metadata = PeeredHypercore::new(0, Arc::new(RwLock::new(feed)));
+impl<Storage> PeeredHyperdrive<Storage>
+where
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+{
+    pub fn new(hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>) -> Self {
+        let metadata = PeeredHypercore::new(0, hyperdrive.read().unwrap().metadata.clone());
+        let content = hyperdrive.read().unwrap().content.clone();
+        if let Some(content) = content {
+            return Self {
+                metadata,
+                hyperdrive,
+                content: Some(PeeredHypercore::new(1, content)),
+                delay_feed_content: None,
+            };
+        }
         Self {
             metadata,
+            hyperdrive,
             content: None,
             delay_feed_content: None,
         }
@@ -91,19 +123,23 @@ impl PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
 
     pub fn initialize_content_feed(&mut self, public_key: hypercore::PublicKey) {
         if let None = self.content {
-            let feed = hypercore::Feed::builder(
-                public_key,
-                hypercore::Storage::new_memory().expect("could not page feed memory"),
-            )
-            .build()
-            .expect("Could not start feed");
-            self.content = Some(PeeredHypercore::new(1, Arc::new(RwLock::new(feed))));
+            self.content = Some(PeeredHypercore::new(
+                1,
+                self.hyperdrive
+                    .write()
+                    .unwrap()
+                    .readable_content_feed(public_key),
+            ));
         }
     }
 }
 
 #[async_trait]
-impl DatProtocolEvents for PeeredHyperdrive<random_access_memory::RandomAccessMemory> {
+impl<Storage> DatProtocolEvents for PeeredHyperdrive<Storage>
+where
+    Storage:
+        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+{
     async fn on_finish(&mut self, _client: &mut Client) {
         log::debug!(
             "Metadata audit: {:?}",

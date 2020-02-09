@@ -36,8 +36,9 @@ Modules:
   - [x] Clone metadata into a hypercore feed
   - [x] Hypercore and Hyperfeed impl
   - [x] Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896))
+  - [x] Create a `Dat` struct that discovers and creates peeredfeed interactions
+  - [ ] Write to disk
   - [ ] Impl remaining replicate logic
-  - [ ] Create a `Dat` struct that discovers and creates peeredfeed interactions
 - [ ] `colmeia-dat1-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
 - [ ] `colmeia-dat1-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
@@ -90,6 +91,13 @@ Versions for reference: **TDB**
 ```
 Local dat2: be41e3d43d054982e14dfc60281d9d4425ab5d4b0b280a355b7927869ca08fc5
 ```
+
+### Find a peer, download stuff
+
+```sh
+RUST_LOG="colmeia_dat1=debug" cargo run --bin colmeia-sync -- dat://642b2da5e4267635259152eb0b1c04416030a891acd65d6c942b8227b8cbabed
+ ```
+
 
 ### Find a local peer
 

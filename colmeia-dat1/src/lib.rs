@@ -20,16 +20,19 @@ pub use crate::hyperdrive::*;
 enum PeerState {
     Discovered(SocketAddr),
     Connected(TcpStream),
-    Peered(colmeia_dat1_proto::Client),
+    Peered(DatService),
 }
 
 pub struct Dat<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = failure::Error>
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static,
 {
     key: HashUrl,
-    hyperdrive: Hyperdrive<Storage>,
+    hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
     listen_address: SocketAddr,
     peers: Arc<RwLock<SegQueue<PeerState>>>,
     discovery: Box<dyn Stream<Item = SocketAddr> + Unpin + Send>,
@@ -46,9 +49,9 @@ impl Dat<random_access_disk::RandomAccessDisk> {
         let hyperdrive = hyperdrive::in_disk(key.public_key().clone(), metadata, content);
         Self {
             key,
-            hyperdrive,
             listen_address,
             peers,
+            hyperdrive: Arc::new(RwLock::new(hyperdrive)),
             discovery: Box::new(stream::empty()),
         }
     }
@@ -60,9 +63,9 @@ impl Dat<random_access_memory::RandomAccessMemory> {
         let hyperdrive = hyperdrive::in_memmory(key.public_key().clone());
         Self {
             key,
-            hyperdrive,
             listen_address,
             peers,
+            hyperdrive: Arc::new(RwLock::new(hyperdrive)),
             discovery: Box::new(stream::empty()),
         }
     }
@@ -120,6 +123,7 @@ where
 
         let peers = self.peers.clone();
         let key = self.key;
+        let hyperdrive = self.hyperdrive;
         let connection = task::spawn(async move {
             loop {
                 let connection = peers.write().unwrap().pop();
@@ -131,24 +135,24 @@ where
                         }
                     }
                     Ok(PeerState::Connected(stream)) => {
-                        log::error!("peeering");
-
                         let client_initialization = new_client(key.clone(), stream).await;
                         let client = handshake(client_initialization).await;
-                        log::error!("peeering");
-
                         if let Some(client) = client {
-                            // let event_writer = PeeredHyperdrive::new(key.public_key().clone());
-                            log::error!("peered");
-                            peers.write().unwrap().push(PeerState::Peered(client));
+                            let peered = PeeredHyperdrive::new(hyperdrive.clone());
+                            let driver = DatService::new(client, peered);
+                            peers.write().unwrap().push(PeerState::Peered(driver));
                         }
                     }
-                    Ok(PeerState::Peered(client)) => {
-                        log::warn!("peered");
-                        peers.write().unwrap().push(PeerState::Peered(client));
+                    Ok(PeerState::Peered(mut service)) => {
+                        if let Ok(Some(message)) =
+                            async_std::future::timeout(Duration::from_secs(5), service.next()).await
+                        {
+                            log::debug!("Dat Message handled {:?}", message);
+                            peers.write().unwrap().push(PeerState::Peered(service));
+                        }
                     }
                     Err(e) => {
-                        log::debug!("pop error {:?}", e);
+                        log::debug!("queue empty: {:?}", e);
                         task::sleep(Duration::from_secs(1)).await
                     }
                 }
