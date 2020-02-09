@@ -9,13 +9,14 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use colmeia_dat1_core::HashUrl;
+use colmeia_dat1_proto::{handshake, new_client, DatService};
 
-mod hypercore;
 mod hyperdrive;
+mod network;
 mod schema;
 
-pub use crate::hypercore::*;
 pub use crate::hyperdrive::*;
+pub use crate::network::hyperdrive::PeeredHyperdrive;
 
 enum PeerState {
     Discovered(SocketAddr),

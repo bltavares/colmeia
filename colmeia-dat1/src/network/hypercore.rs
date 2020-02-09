@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-pub use colmeia_dat1_proto::*;
+use colmeia_dat1_proto::*;
 
 pub struct PeeredHypercore<Storage>
 where
