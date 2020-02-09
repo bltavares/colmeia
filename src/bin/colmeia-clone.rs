@@ -1,7 +1,10 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use colmeia_dat1::*;
 use std::net::SocketAddr;
+use std::sync::{Arc, RwLock};
+
+use colmeia_dat1::*;
+use colmeia_dat1_proto::*;
 
 fn address() -> SocketAddr {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -46,7 +49,8 @@ fn main() {
             .await
             .expect("could not handshake");
 
-        let observer = PeeredHyperdrive::new(public_key);
+        let hyperdrive = Arc::new(RwLock::new(in_memmory(public_key)));
+        let observer = PeeredHyperdrive::new(hyperdrive);
         let mut service = DatService::new(client, observer);
 
         while let Some(message) = service.next().await {
