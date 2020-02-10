@@ -27,4 +27,11 @@ android: $(ANDROID_LIBS)
 	-cp target/i686-linux-android/$(MODE)/libcolmeia_dat1_ffi.so \
 		colmeia_app/colmeia_native/android/src/main/jniLibs/x86/libcolmeia_dat1_ffi.so
 
-.PHONY: android
+target/universal/$(MODE)/libcolmeia_dat1_ffi.a: $(RUST_FILES)
+	cargo lipo $(RUST_FLAGS)
+
+ios: target/universal/$(MODE)/libcolmeia_dat1_ffi.a
+	-cp $< colmeia_app/colmeia_native/ios/libs/libcolmeia_dat1_ffi.a
+	-cbindgen colmeia-dat1-ffi -c colmeia-dat1-ffi/cbindgen.toml > colmeia_app/colmeia_native/ios/libs/libcolmeia_dat1_ffi.h
+
+.PHONY: android ios

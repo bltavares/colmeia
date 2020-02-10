@@ -5,7 +5,10 @@ authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
 
 [lib]
-crate-type = ['cdylib']
+crate-type = [
+    'cdylib',
+    'staticlib',
+]
 
 [dependencies]
 log = '0.4.8'
@@ -22,3 +25,5 @@ path = '../colmeia-dat1-core'
 path = '../colmeia-dat1'
 [target."cfg(target_os = \"android\")".dependencies]
 android_logger = '0.8'
+[target."cfg(target_os = \"ios\")".dependencies]
+syslog = '5.0.0'

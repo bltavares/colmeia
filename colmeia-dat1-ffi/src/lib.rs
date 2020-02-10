@@ -1,3 +1,6 @@
+use futures::future::FutureExt;
+use std::panic;
+
 #[cfg(target_os = "android")]
 fn logging() {
     use android_logger::Config;
@@ -5,11 +8,29 @@ fn logging() {
     android_logger::init_once(Config::default().with_min_level(Level::Debug));
 }
 
-use futures::future::FutureExt;
+#[cfg(target_os = "ios")]
+fn logging() {
+    use log::LevelFilter;
+    use syslog::{BasicLogger, Facility, Formatter3164};
+
+    let formatter = Formatter3164 {
+        facility: Facility::LOG_USER,
+        hostname: None,
+        process: "libcolmeia_dat1".into(),
+        pid: 0,
+    };
+
+    let logger = syslog::unix(formatter).expect("could not connect to syslog");
+    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .map(|()| log::set_max_level(LevelFilter::Debug));
+}
+
+#[cfg(all(not(target_os = "ios"), not(target_os = "android")))]
+fn logging() {}
 
 #[no_mangle]
-pub extern "C" fn sync() {
-    use std::panic;
+pub extern "C" fn colmeia_dat1_sync() {
+    logging();
 
     panic::set_hook(Box::new(|e| {
         log::error!("Error: {:?}", e);
