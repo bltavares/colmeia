@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:flutter/services.dart';
 import 'package:colmeia_native/colmeia_native.dart';
@@ -13,6 +14,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  Future<Isolate> server;
 
   @override
   void initState() {
@@ -50,6 +52,11 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Text('Running on: $_platformVersion\n'),
         ),
+        floatingActionButton: FloatingActionButton(onPressed: () {
+          setState(() {
+            server = Isolate.spawn(sync, {});
+          });
+        }),
       ),
     );
   }
