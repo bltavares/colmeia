@@ -315,6 +315,7 @@ dependencies = [
  "async-std",
  "colmeia-dat1",
  "colmeia-dat1-core",
+ "futures",
  "log",
 ]
 
