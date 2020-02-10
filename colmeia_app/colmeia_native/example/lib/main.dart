@@ -14,7 +14,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  Future<Isolate> server;
+  int server = 0;
 
   @override
   void initState() {
@@ -52,11 +52,17 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Text('Running on: $_platformVersion\n'),
         ),
-        floatingActionButton: FloatingActionButton(onPressed: () {
-          setState(() {
-            server = Isolate.spawn(sync, {});
-          });
-        }),
+        floatingActionButton: FloatingActionButton(
+            backgroundColor: server == 0 ? Colors.blue : Colors.red,
+            mini: server > 0,
+            onPressed: () {
+              if (server == 0) {
+                Isolate.spawn(sync, {});
+                setState(() {
+                  server = 1;
+                });
+              }
+            }),
       ),
     );
   }
