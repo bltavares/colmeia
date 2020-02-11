@@ -28,7 +28,7 @@ pub extern "C" fn colmeia_dat1_sync() {
         println!("Custom panic hook");
     }));
 
-    let key = "dat://642b2da5e4267635259152eb0b1c04416030a891acd65d6c942b8227b8cbabed";
+    let key = "dat://6268b99fbacacea49c6bc3d4776b606db2aeadb3fa831342ba9f70d55c98929f";
     let dat_key = colmeia_dat1_core::parse(&key).expect("invalid dat argument");
     let dat_key = match dat_key {
         colmeia_dat1_core::DatUrlResolution::HashUrl(result) => result,

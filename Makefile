@@ -16,21 +16,21 @@ target/%/$(MODE)/libcolmeia_dat1_ffi.so: $(RUST_FILES)
 
 android: $(ANDROID_LIBS)
 	-cp target/aarch64-linux-android/$(MODE)/libcolmeia_dat1_ffi.so \
-		colmeia_app/colmeia_native/android/src/main/jniLibs/arm64-v8a/libcolmeia_dat1_ffi.so
+		flutter/colmeia_native/android/src/main/jniLibs/arm64-v8a/libcolmeia_dat1_ffi.so
 
 	-cp target/armv7-linux-androideabi/$(MODE)/libcolmeia_dat1_ffi.so \
-		colmeia_app/colmeia_native/android/src/main/jniLibs/armeabi-v7a/libcolmeia_dat1_ffi.so
+		flutter/colmeia_native/android/src/main/jniLibs/armeabi-v7a/libcolmeia_dat1_ffi.so
 
 	-cp target/x86_64-linux-android/$(MODE)/libcolmeia_dat1_ffi.so \
-		colmeia_app/colmeia_native/android/src/main/jniLibs/x86_64/libcolmeia_dat1_ffi.so
+		flutter/colmeia_native/android/src/main/jniLibs/x86_64/libcolmeia_dat1_ffi.so
 
 	-cp target/i686-linux-android/$(MODE)/libcolmeia_dat1_ffi.so \
-		colmeia_app/colmeia_native/android/src/main/jniLibs/x86/libcolmeia_dat1_ffi.so
+		flutter/colmeia_native/android/src/main/jniLibs/x86/libcolmeia_dat1_ffi.so
 
 target/universal/$(MODE)/libcolmeia_dat1_ffi.a: $(RUST_FILES)
 	cargo lipo $(RUST_FLAGS)
 
 ios: target/universal/$(MODE)/libcolmeia_dat1_ffi.a
-	-cp $< colmeia_app/colmeia_native/ios/libs/libcolmeia_dat1_ffi.a
+	-cp $< flutter/colmeia_native/ios/libs/libcolmeia_dat1_ffi.a
 
 .PHONY: android ios
