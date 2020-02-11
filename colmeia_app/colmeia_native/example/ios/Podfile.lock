@@ -1,0 +1,22 @@
+PODS:
+  - colmeia_native (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+
+DEPENDENCIES:
+  - colmeia_native (from `.symlinks/plugins/colmeia_native/ios`)
+  - Flutter (from `Flutter`)
+
+EXTERNAL SOURCES:
+  colmeia_native:
+    :path: ".symlinks/plugins/colmeia_native/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  colmeia_native: c3d8f16bb7881f4e7e639131f36efe8f669efac7
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+
+PODFILE CHECKSUM: 08a7a6652562c3c758dbf5e51da64282769232d1
+
+COCOAPODS: 1.7.5
