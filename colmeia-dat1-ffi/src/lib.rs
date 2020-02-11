@@ -11,18 +11,9 @@ fn logging() {
 #[cfg(target_os = "ios")]
 fn logging() {
     use log::LevelFilter;
-    use syslog::{BasicLogger, Facility, Formatter3164};
+    use syslog::Facility;
 
-    let formatter = Formatter3164 {
-        facility: Facility::LOG_USER,
-        hostname: None,
-        process: "libcolmeia_dat1".into(),
-        pid: 0,
-    };
-
-    let logger = syslog::unix(formatter).expect("could not connect to syslog");
-    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| log::set_max_level(LevelFilter::Debug));
+    syslog::init_unix(Facility::LOG_USER, LevelFilter::max()).expect("could not connect to syslog");
 }
 
 #[cfg(all(not(target_os = "ios"), not(target_os = "android")))]
@@ -37,7 +28,6 @@ pub extern "C" fn colmeia_dat1_sync() {
         println!("Custom panic hook");
     }));
 
-    logging();
     let key = "dat://642b2da5e4267635259152eb0b1c04416030a891acd65d6c942b8227b8cbabed";
     let dat_key = colmeia_dat1_core::parse(&key).expect("invalid dat argument");
     let dat_key = match dat_key {
@@ -47,7 +37,7 @@ pub extern "C" fn colmeia_dat1_sync() {
 
     let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:43898".parse().unwrap());
     dat.with_discovery(vec![dat.lan()]);
-    log::warn!("Startig");
+    log::warn!("Starting");
     async_std::task::spawn(async {
         let stream = std::panic::AssertUnwindSafe(dat.sync());
         let result = stream.catch_unwind().await;

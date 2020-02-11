@@ -32,6 +32,5 @@ target/universal/$(MODE)/libcolmeia_dat1_ffi.a: $(RUST_FILES)
 
 ios: target/universal/$(MODE)/libcolmeia_dat1_ffi.a
 	-cp $< colmeia_app/colmeia_native/ios/libs/libcolmeia_dat1_ffi.a
-	-cbindgen colmeia-dat1-ffi -c colmeia-dat1-ffi/cbindgen.toml > colmeia_app/colmeia_native/ios/libs/libcolmeia_dat1_ffi.h
 
 .PHONY: android ios
