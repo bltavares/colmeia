@@ -49,7 +49,9 @@ fn main() {
             .await
             .expect("could not handshake");
 
-        let hyperdrive = Arc::new(RwLock::new(in_memmory(public_key)));
+        let hyperdrive = Arc::new(RwLock::new(
+            in_memmory(public_key).expect("Invalid intialization"),
+        ));
         let observer = PeeredHyperdrive::new(hyperdrive);
         let mut service = DatService::new(client, observer);
 

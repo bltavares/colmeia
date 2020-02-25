@@ -15,11 +15,13 @@ pub struct CloneableStream {
 }
 
 impl CloneableStream {
-    pub fn upgrade(&mut self, nonce: &[u8]) {
+    pub fn upgrade(&mut self, nonce: &[u8]) -> anyhow::Result<()> {
         self.cipher
             .write()
-            .expect("could not aquire upgrade lock")
+            .map_err(|_| anyhow::anyhow!("Could not upgrade stream to encrypted version"))?
             .initialize(nonce);
+
+        Ok(())
     }
 }
 
@@ -34,7 +36,7 @@ impl AsyncRead for CloneableStream {
 
         self.cipher
             .write()
-            .expect("could not acquire read encrypted lock")
+            .map_err(|_| std::io::Error::from(std::io::ErrorKind::Other))?
             .try_apply(&mut buf[..content]);
 
         log::debug!("maybe encrypted content {:?}", &buf[..content]);
@@ -53,7 +55,7 @@ impl AsyncWrite for CloneableStream {
             let mut buffer = buf.to_vec();
             self.cipher
                 .write()
-                .expect("could not acquire write encrypted lock")
+                .map_err(|_| std::io::Error::from(std::io::ErrorKind::Other))?
                 .try_apply(&mut buffer);
             log::debug!("maybe encrypted {:?}", buffer);
             self.buffer = Some(buffer);

@@ -26,20 +26,20 @@ impl Mdns {
     }
 
     pub fn with_location(&mut self, duration: Duration) -> &mut Self {
-        self.locate = Some(locate::Locator::new(
-            crate::socket::create_shared().expect("socket creation failed"),
-            self.dat_url.clone(),
-            duration,
-        ));
+        self.locate = crate::socket::create_shared()
+            .map_err(anyhow::Error::from)
+            .and_then(|socket| locate::Locator::new(socket, self.dat_url.clone(), duration))
+            .map_err(|err| log::debug!("Location err: {:?}", err))
+            .ok();
         self
     }
 
     pub fn with_announcer(&mut self, port: u16) -> &mut Self {
-        self.announce = Some(announce::Announcer::new(
-            socket::create_shared().expect("socket creation failed"),
-            self.dat_url.clone(),
-            port,
-        ));
+        self.announce = crate::socket::create_shared()
+            .map_err(anyhow::Error::from)
+            .and_then(|socket| announce::Announcer::new(socket, self.dat_url.clone(), port))
+            .map_err(|err| log::debug!("Announcer err: {:?}", err))
+            .ok();
         self
     }
 }

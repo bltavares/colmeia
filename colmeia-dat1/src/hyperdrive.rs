@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::sync::{Arc, RwLock};
 
 pub struct Hyperdrive<Storage>
@@ -18,59 +19,68 @@ where
     pub fn readable_content_feed(
         &mut self,
         public_key: hypercore::PublicKey,
-    ) -> Arc<RwLock<hypercore::Feed<Storage>>> {
+    ) -> anyhow::Result<Arc<RwLock<hypercore::Feed<Storage>>>> {
         if let Some(storage) = self.content_storage.take() {
             let feed = hypercore::Feed::builder(public_key, storage)
                 .build()
-                .expect("Could not start feed");
+                .map_err(failure::Error::compat)
+                .context("Could not start hypercore feed")?;
 
             self.content = Some(Arc::new(RwLock::new(feed)));
         }
 
-        self.content.as_ref().unwrap().clone()
+        Ok(self.content.as_ref().context("No content to use")?.clone())
     }
 }
 
 pub fn in_memmory(
     public_key: hypercore::PublicKey,
-) -> Hyperdrive<random_access_memory::RandomAccessMemory> {
+) -> anyhow::Result<Hyperdrive<random_access_memory::RandomAccessMemory>> {
     let metadata = hypercore::Feed::builder(
         public_key,
-        hypercore::Storage::new_memory().expect("could not page feed memory"),
+        hypercore::Storage::new_memory()
+            .map_err(failure::Error::compat)
+            .context("could not page feed memory")?,
     )
     .build()
-    .expect("Could not start feed");
+    .map_err(failure::Error::compat)
+    .context("Could not start feed")?;
 
-    let content_storage =
-        hypercore::Storage::new_memory().expect("could not initialize the content storage");
+    let content_storage = hypercore::Storage::new_memory()
+        .map_err(failure::Error::compat)
+        .context("could not initialize the content storage")?;
 
-    Hyperdrive {
+    Ok(Hyperdrive {
         content_storage: Some(content_storage),
         content: None,
         metadata: Arc::new(RwLock::new(metadata)),
-    }
+    })
 }
 
 pub fn in_disk<P: AsRef<std::path::PathBuf>>(
     public_key: hypercore::PublicKey,
     metadata: P,
     content: P,
-) -> Hyperdrive<random_access_disk::RandomAccessDisk> {
+) -> anyhow::Result<Hyperdrive<random_access_disk::RandomAccessDisk>> {
     let metadata = hypercore::Feed::builder(
         public_key,
-        hypercore::Storage::new_disk(metadata.as_ref()).expect("could not page feed memory"),
+        hypercore::Storage::new_disk(metadata.as_ref())
+            .map_err(failure::Error::compat)
+            .context("could not page feed memory")?,
     )
     .build()
-    .expect("Could not start feed");
+    .map_err(failure::Error::compat)
+    .context("Could not start feed")?;
 
     let content_storage = hypercore::Storage::new_disk(content.as_ref())
-        .expect("could not initialize the content storage");
+        .map_err(failure::Error::compat)
+        .context("could not initialize the content storage")?;
 
-    Hyperdrive {
+    Ok(Hyperdrive {
         content_storage: Some(content_storage),
         content: None,
         metadata: Arc::new(RwLock::new(metadata)),
-    }
+    })
 }
 
 // Content is another feed, with the pubkey derived from the metadata key

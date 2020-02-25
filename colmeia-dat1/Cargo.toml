@@ -5,6 +5,7 @@ authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
 
 [dependencies]
+anyhow = '1.0.26'
 random-access-storage = '2.0.0'
 failure = '0.1.6'
 random-access-memory = '1.0.0'

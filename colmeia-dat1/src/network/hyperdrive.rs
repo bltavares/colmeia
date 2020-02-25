@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::sync::{Arc, RwLock};
 
 use colmeia_dat1_proto::*;
@@ -42,13 +43,12 @@ where
 
     pub fn initialize_content_feed(&mut self, public_key: hypercore::PublicKey) {
         if let None = self.content {
-            self.content = Some(PeeredHypercore::new(
-                1,
-                self.hyperdrive
-                    .write()
-                    .unwrap()
-                    .readable_content_feed(public_key),
-            ));
+            let feed = self
+                .hyperdrive
+                .write()
+                .unwrap()
+                .readable_content_feed(public_key);
+            self.content = feed.map(|feed| PeeredHypercore::new(1, feed)).ok();
         }
     }
 }
@@ -59,6 +59,8 @@ where
     Storage:
         random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
+    type Err = anyhow::Error;
+
     async fn on_finish(&mut self, _client: &mut Client) {
         log::debug!(
             "Metadata audit: {:?}",
@@ -70,25 +72,26 @@ where
             log::debug!("Content len: {:?}", content.write().unwrap().len());
         }
     }
+
     async fn on_feed(
         &mut self,
         client: &mut Client,
         channel: u64,
         message: &proto::Feed,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         match channel {
             0 => self.metadata.on_feed(client, channel, message).await?,
             1 => {
                 if let Some(ref mut content) = self.content {
-                    content.on_feed(client, channel, message).await;
+                    content.on_feed(client, channel, message).await?;
                 } else {
                     self.delay_feed_content = Some(message.clone());
                 }
             }
-            _ => return None,
+            _ => return Err(anyhow::anyhow!("Too many channels")),
         }
 
-        Some(())
+        Ok(())
     }
 
     async fn on_handshake(
@@ -96,14 +99,14 @@ where
         client: &mut Client,
         channel: u64,
         message: &proto::Handshake,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         match channel {
             // Only the first feed sends a handshake on hyperdrive v9
             0 => self.metadata.on_handshake(client, channel, message).await?,
-            _ => return None,
+            _ => return Err(anyhow::anyhow!("Too many handshakes")),
         }
 
-        Some(())
+        Ok(())
     }
 
     async fn on_have(
@@ -111,17 +114,17 @@ where
         client: &mut Client,
         channel: u64,
         message: &proto::Have,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         match channel {
             0 => self.metadata.on_have(client, channel, message).await?,
             1 => {
                 if let Some(ref mut content) = self.content {
-                    content.on_have(client, channel, message).await;
+                    content.on_have(client, channel, message).await?;
                 }
             }
-            _ => return None,
+            _ => return Err(anyhow::anyhow!("Too many channels")),
         }
-        Some(())
+        Ok(())
     }
 
     async fn on_data(
@@ -129,24 +132,23 @@ where
         client: &mut Client,
         channel: u64,
         message: &proto::Data,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         match channel {
             0 => self.metadata.on_data(client, channel, message).await?,
             1 => {
                 if let Some(ref mut content) = self.content {
-                    content.on_data(client, channel, message).await;
+                    content.on_data(client, channel, message).await?;
                 }
             }
-            _ => return None,
+            _ => return Err(anyhow::anyhow!("Too many channels")),
         }
 
         if let None = self.content {
             let initial_metadata = self.metadata.write().unwrap().get(0);
             if let Ok(Some(initial_metadata)) = initial_metadata {
-                let content: crate::schema::Index =
-                    protobuf::parse_from_bytes(&initial_metadata).ok()?;
+                let content: crate::schema::Index = protobuf::parse_from_bytes(&initial_metadata)?;
                 let public_key = hypercore::PublicKey::from_bytes(content.get_content())
-                    .expect("invalid content key stored in metadata");
+                    .context("invalid content key stored in metadata")?;
                 self.initialize_content_feed(public_key);
                 let delayed_message = self.delay_feed_content.take();
                 if let Some(ref mut content) = self.content {
@@ -160,6 +162,6 @@ where
                 }
             }
         }
-        Some(())
+        Ok(())
     }
 }

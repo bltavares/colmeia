@@ -1,3 +1,4 @@
+use anyhow::Context as context;
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
 use futures::io::{AsyncWriteExt, BufReader, BufWriter};
@@ -76,46 +77,47 @@ impl Client {
         &mut self.writer
     }
 
-    pub async fn have(&mut self, channel: u64, message: &proto::Have) -> Option<()> {
+    pub async fn have(&mut self, channel: u64, message: &proto::Have) -> anyhow::Result<()> {
         self.writer()
             .send(ChannelMessage::new(
                 channel,
                 3,
-                message.write_to_bytes().expect("not a valid have"),
+                message.write_to_bytes().context("not a valid have")?,
             ))
             .await
-            .ok()
+            .context("could not write have")
     }
 
-    pub async fn want(&mut self, channel: u64, message: &proto::Want) -> Option<()> {
+    pub async fn want(&mut self, channel: u64, message: &proto::Want) -> anyhow::Result<()> {
         self.writer()
             .send(ChannelMessage::new(
                 channel,
                 5,
-                message.write_to_bytes().expect("not a valid want"),
+                message.write_to_bytes().context("not a valid want")?,
             ))
             .await
-            .ok()
+            .context("could not write want")
     }
 
-    pub async fn request(&mut self, channel: u64, message: &proto::Request) -> Option<()> {
+    pub async fn request(&mut self, channel: u64, message: &proto::Request) -> anyhow::Result<()> {
         self.writer()
             .send(ChannelMessage::new(
                 channel,
                 7,
-                message.write_to_bytes().expect("not a valid request"),
+                message.write_to_bytes().context("not a valid request")?,
             ))
             .await
-            .ok()
+            .context("could not write request")
     }
 }
 
 // TODO macro?
 #[async_trait]
 pub trait DatProtocolEvents {
-    async fn on_start(&mut self, _client: &mut Client) -> Option<()> {
+    type Err;
+    async fn on_start(&mut self, _client: &mut Client) -> Result<(), Self::Err> {
         log::debug!("Starting");
-        Some(())
+        Ok(())
     }
 
     async fn on_finish(&mut self, _client: &mut Client) {
@@ -127,9 +129,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Feed,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_handshake(
@@ -137,9 +139,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Handshake,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_info(
@@ -147,9 +149,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Info,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_have(
@@ -157,9 +159,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Have,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_unhave(
@@ -167,9 +169,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Unhave,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_want(
@@ -177,9 +179,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Want,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_unwant(
@@ -187,9 +189,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Unwant,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_request(
@@ -197,9 +199,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Request,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_cancel(
@@ -207,9 +209,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Cancel,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 
     async fn on_data(
@@ -217,9 +219,9 @@ pub trait DatProtocolEvents {
         _client: &mut Client,
         channel: u64,
         message: &proto::Data,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}: {:?}", channel, message);
-        Some(())
+        Ok(())
     }
 }
 
@@ -278,7 +280,7 @@ pub async fn new_client(dat_key: HashUrl, tcp_stream: TcpStream) -> ClientInitia
     }
 }
 
-pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
+pub async fn handshake(mut init: ClientInitialization) -> anyhow::Result<Client> {
     log::debug!("Bulding nonce to start connection");
     let nonce: [u8; 24] = rand::thread_rng().gen();
     let nonce = nonce.to_vec();
@@ -290,38 +292,42 @@ pub async fn handshake(mut init: ClientInitialization) -> Option<Client> {
         init.bare_writer.send(ChannelMessage::new(
             0,
             0,
-            feed.write_to_bytes().expect("invalid feed message"),
+            feed.write_to_bytes().context("invalid feed message")?,
         )),
     )
     .await
-    .ok()?;
+    .context("could not send initial feed")?;
 
     log::debug!("Sent a nonce, upgrading write socket");
-    init.upgradable_writer.upgrade(feed.get_nonce());
+    init.upgradable_writer.upgrade(feed.get_nonce())?;
     let writer = Writer::new(BufWriter::new(init.upgradable_writer));
 
     log::debug!("Preparing to read feed nonce");
-    let received_feed = async_std::future::timeout(Duration::from_secs(1), init.bare_reader.next())
-        .await
-        .ok()??
-        .ok()?;
-    let parsed_feed = received_feed.parse().ok()?;
+    let received_feed =
+        async_std::future::timeout(Duration::from_secs(1), init.bare_reader.next()).await?;
+    let received_feed = match received_feed {
+        Some(received_feed) => received_feed,
+        _ => return Err(anyhow::anyhow!("Timed out on initial feed")),
+    };
+    let parsed_feed = received_feed?.parse()?;
     let payload = match parsed_feed {
         DatMessage::Feed(payload) => payload,
-        _ => return None,
+        _ => return Err(anyhow::anyhow!("Invalid initial message")),
     };
 
     log::debug!("Dat feed received {:?}", payload);
     if payload.get_discoveryKey() != init.dat_key.discovery_key() && !payload.has_nonce() {
-        return None;
+        return Err(anyhow::anyhow!(
+            "Wrong discovery key and no nonce on first message"
+        ));
     }
     log::debug!("Feed received, upgrading read socket");
-    init.upgradable_reader.upgrade(payload.get_nonce());
+    init.upgradable_reader.upgrade(payload.get_nonce())?;
     let reader = Reader::new(BufReader::new(init.upgradable_reader));
 
     log::debug!("Handshake finished");
 
-    Some(Client {
+    Ok(Client {
         reader,
         writer,
         writer_socket: init.writer_socket,
@@ -333,18 +339,17 @@ pub struct DatService {
     stream: Pin<Box<dyn stream::Stream<Item = ChannelMessage> + Send>>,
 }
 
-async fn should_finish<O, R: std::fmt::Debug>(
+async fn should_finish<O, S: std::fmt::Debug, R: std::fmt::Debug>(
     client: &mut Client,
     observer: &mut O,
-    result: Option<R>,
-) -> Option<R>
+    result: Result<S, R>,
+) -> Result<S, R>
 where
     O: DatProtocolEvents + Send + 'static,
 {
     log::debug!("Result: {:?}", result);
-    if result.is_none() {
+    if result.is_err() {
         observer.on_finish(client).await;
-        return None;
     }
     result
 }
@@ -354,22 +359,27 @@ impl DatService {
     pub fn new<O>(client: Client, observer: O) -> Self
     where
         O: DatProtocolEvents + Send + 'static,
+        <O as DatProtocolEvents>::Err: std::fmt::Debug + Send,
     {
         let stream = stream::unfold(
             (client, observer, true),
             |(mut client, mut observer, first)| async move {
                 if first {
                     let result = observer.on_start(&mut client).await;
-                    should_finish(&mut client, &mut observer, result).await?;
+                    should_finish(&mut client, &mut observer, result)
+                        .await
+                        .ok()?;
                     if let Some(message) = client.first_message.take() {
                         let result = observer.on_feed(&mut client, 0, &message).await;
-                        should_finish(&mut client, &mut observer, result).await?;
+                        should_finish(&mut client, &mut observer, result)
+                            .await
+                            .ok()?;
                     }
                 };
 
                 log::debug!("READING from socket");
-                let response = client.reader().next().await;
-                let response = should_finish(&mut client, &mut observer, response).await?;
+                let response = client.reader().next().await?;
+                let response = should_finish(&mut client, &mut observer, response).await;
 
                 match &response {
                     Err(err) => {
@@ -380,52 +390,72 @@ impl DatService {
                     Ok(message) => match message.parse() {
                         Ok(DatMessage::Feed(m)) => {
                             let result = observer.on_feed(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Handshake(m)) => {
                             let result = observer
                                 .on_handshake(&mut client, message.channel, &m)
                                 .await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Info(m)) => {
                             let result = observer.on_info(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Have(m)) => {
                             let result = observer.on_have(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Unhave(m)) => {
                             let result = observer.on_unhave(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Want(m)) => {
                             let result = observer.on_want(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Unwant(m)) => {
                             let result = observer.on_unwant(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Request(m)) => {
                             let result =
                                 observer.on_request(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Cancel(m)) => {
                             let result = observer.on_cancel(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Ok(DatMessage::Data(m)) => {
                             let result = observer.on_data(&mut client, message.channel, &m).await;
-                            should_finish(&mut client, &mut observer, result).await?;
+                            should_finish(&mut client, &mut observer, result)
+                                .await
+                                .ok()?;
                         }
                         Err(err) => log::debug!("Dropping message {:?} err {:?}", message, err),
                     },
                 };
 
-                Some((response.unwrap(), (client, observer, false)))
+                Some((response.ok()?, (client, observer, false)))
             },
         );
 
@@ -477,12 +507,14 @@ impl Default for SimpleDatHandshake {
 
 #[async_trait]
 impl DatProtocolEvents for SimpleDatHandshake {
+    type Err = anyhow::Error;
+
     async fn on_feed(
         &mut self,
         client: &mut Client,
         channel: u64,
         message: &proto::Feed,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!("Feed received {:?} {:?}", channel, message);
 
         // Initial channel is sent as part of the protocol negotiation.
@@ -495,10 +527,9 @@ impl DatProtocolEvents for SimpleDatHandshake {
                     0,
                     message
                         .write_to_bytes()
-                        .expect("unable to re-encode received feed"),
+                        .context("unable to re-encode received feed")?,
                 ))
-                .await
-                .ok()?;
+                .await?;
         }
 
         self.feeds.insert(channel, message.clone());
@@ -516,12 +547,12 @@ impl DatProtocolEvents for SimpleDatHandshake {
                 1,
                 handshake
                     .write_to_bytes()
-                    .expect("invalid handshake message"),
+                    .context("invalid handshake message")?,
             ))
             .await
-            .expect("connection closed");
+            .context("connection closed")?;
 
-        Some(())
+        Ok(())
     }
 
     async fn on_handshake(
@@ -529,17 +560,16 @@ impl DatProtocolEvents for SimpleDatHandshake {
         _client: &mut Client,
         channel: u64,
         message: &proto::Handshake,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         log::debug!(
             "Preparing to read encrypted handshake, {:?} {:?}",
             channel,
             message
         );
         if message.get_id() == self.id {
-            // disconnect, we connect to ourselves
-            return None;
+            return Err(anyhow::anyhow!("Connected to ourselves. disconnect"));
         }
         self.handshakes.insert(channel, message.clone());
-        Some(())
+        Ok(())
     }
 }
