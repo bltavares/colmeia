@@ -15,7 +15,8 @@ log = '0.4.8'
 
 [dependencies.bitfield-rle]
 version = '0.1.1'
-path = '../../datrs/bitfield-rle'
+git = 'https://github.com/bltavares/bitfield-rle'
+branch = 'failure-into-stderr'
 
 [dependencies.random-access-disk]
 version = '1.0.0'
