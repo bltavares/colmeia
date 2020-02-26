@@ -1,0 +1,29 @@
+[package]
+name = 'colmeia-dat1-ffi'
+version = '0.1.0'
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
+edition = '2018'
+
+[lib]
+crate-type = [
+    'cdylib',
+    'staticlib',
+]
+
+[dependencies]
+log = '0.4.8'
+futures = '0.3'
+
+[dependencies.async-std]
+version = '1.5.0'
+features = ['unstable']
+
+[dependencies.colmeia-dat1-core]
+path = '../colmeia-dat1-core'
+
+[dependencies.colmeia-dat1]
+path = '../colmeia-dat1'
+[target."cfg(target_os = \"android\")".dependencies]
+android_logger = '0.8'
+[target."cfg(target_os = \"ios\")".dependencies]
+syslog = '5.0.0'

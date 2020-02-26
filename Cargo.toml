@@ -10,6 +10,7 @@ members = [
     'colmeia-dat1-proto',
     'colmeia-dat1-core',
     'colmeia-dat1',
+    'colmeia-dat1-ffi',
 ]
 
 [dependencies]

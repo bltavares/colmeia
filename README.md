@@ -115,12 +115,6 @@ RUST_LOG=debug cargo run --bin colmeia-mdns -- dat://460f04cf12c3b9833e5a0d3dd8e
 RUST_LOG=debug cargo run --bin colmeia-nc -- 127.0.0.1:3282  dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
 ```
 
-### Start a server (WIP)
-
-```sh
-RUST_LOG=debug cargo run --bin colmeia-server -- 0.0.0.0:8787 dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
-```
-
 ### Clone from a single host
 
 ```sh
@@ -206,4 +200,29 @@ Open the app and copy the content to the home folder:
 cp /data/local/tmp/colmeia/colmeia-server ~
 
 RUST_LOG=debug ~/colmeia-server 0.0.0.0:8787 dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
+```
+
+### Flutter
+
+#### Android libs
+
+Only runs on Linux (or WSL2)
+
+```sh
+make android
+```
+
+#### iOS libs
+
+Only works on Mac.
+`Enable Bitcode = false`
+
+```sh
+# 64 bit targets (real device & simulator):
+rustup target add aarch64-apple-ios x86_64-apple-ios
+cargo install cargo-lipo
+```
+
+```sh
+make ios
 ```

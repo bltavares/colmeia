@@ -8,7 +8,6 @@ edition = '2018'
 anyhow = '1.0.26'
 random-access-storage = '3.0.0'
 async-trait = '0.1.24'
-async-std = '1.5.0'
 protobuf = '2.10.1'
 crossbeam-queue = '0.2.1'
 futures = '0.3'
@@ -27,6 +26,10 @@ branch = 'failure-into-stderr'
 version = '1.1.0'
 git = 'https://github.com/bltavares/random-access-memory'
 branch = 'failure-into-stderr'
+
+[dependencies.async-std]
+version = '1.5.0'
+features = ['unstable']
 
 [dependencies.colmeia-dat1-mdns]
 path = '../colmeia-dat1-mdns'
