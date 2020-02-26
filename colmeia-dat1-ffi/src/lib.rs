@@ -39,12 +39,17 @@ pub extern "C" fn colmeia_dat1_sync() {
     let dat_key = match dat_key {
         colmeia_dat1_core::DatUrlResolution::HashUrl(result) => result,
         _ => {
-            log::error!("invalid hash key");
+            log::error!("non-resolved hash");
             return;
         }
     };
-
-    let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:43898".parse().unwrap());
+    let mut dat = match colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:43898".parse().unwrap()) {
+        Ok(dat) => dat,
+        Err(e) => {
+            log::error!("could not start dat {:?}", e);
+            return;
+        }
+    };
     dat.with_discovery(dat.lan());
     log::warn!("Starting");
     async_std::task::spawn(async {
