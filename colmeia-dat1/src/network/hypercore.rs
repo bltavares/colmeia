@@ -94,8 +94,18 @@ where
             return Ok(());
         }
 
-        let feed_length = self.feed.read().unwrap().len() - 1;
-        if self.feed.write().unwrap().has(feed_length) {
+        let feed_length = self
+            .feed
+            .read()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
+            .len()
+            - 1;
+        if self
+            .feed
+            .write()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
+            .has(feed_length)
+        {
             // Eagerly send the length of the feed to the otherside
             // TODO: only send this if the remote is not wanting a region
             // where this is contained in
@@ -106,10 +116,9 @@ where
         let rle = self
             .feed
             .read()
-            .unwrap()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
             .bitfield()
-            .compress(message.get_start() as usize, message.get_length() as usize)
-            .unwrap();
+            .compress(message.get_start() as usize, message.get_length() as usize)?;
         let mut have = proto::Have::new();
         have.set_start(message.get_start());
         have.set_length(message.get_length());
@@ -194,7 +203,7 @@ where
 
         self.feed
             .write()
-            .unwrap()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
             .put(
                 message.get_index() as usize,
                 if message.has_value() {

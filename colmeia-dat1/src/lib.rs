@@ -98,7 +98,9 @@ where
         let peers = self.peers.clone();
         let discovery = task::spawn(async move {
             while let Some(peer) = discovery.next().await {
-                peers.write().unwrap().push(PeerState::Discovered(peer));
+                if let Ok(peers) = peers.write() {
+                    peers.push(PeerState::Discovered(peer));
+                }
             }
         });
 
@@ -113,7 +115,9 @@ where
                 loop {
                     if let Ok((stream, remote_addrs)) = listener.accept().await {
                         log::debug!("Received connection from {:?}", remote_addrs);
-                        peers.write().unwrap().push(PeerState::Connected(stream))
+                        if let Ok(peers) = peers.write() {
+                            peers.push(PeerState::Connected(stream))
+                        }
                     }
                 }
             } else {
@@ -126,12 +130,18 @@ where
         let hyperdrive = self.hyperdrive;
         let connection = task::spawn(async move {
             loop {
-                let connection = peers.write().unwrap().pop();
+                let connection = match peers.write() {
+                    Ok(peers) => peers.pop(),
+                    Err(e) => {
+                        log::error!("peers contention error empty: {:?}", e);
+                        continue;
+                    }
+                };
                 match connection {
                     Ok(PeerState::Discovered(socket)) => {
                         let stream = TcpStream::connect(socket).await;
-                        if let Ok(stream) = stream {
-                            peers.write().unwrap().push(PeerState::Connected(stream));
+                        if let (Ok(stream), Ok(peers)) = (stream, peers.write()) {
+                            peers.push(PeerState::Connected(stream));
                         }
                     }
                     Ok(PeerState::Connected(stream)) => {
@@ -139,24 +149,30 @@ where
                         let client = handshake(client_initialization).await;
                         match client {
                             Ok(client) => {
-                                let peered = PeeredHyperdrive::new(hyperdrive.clone());
-                                let driver = DatService::new(client, peered);
-                                peers.write().unwrap().push(PeerState::Peered(driver));
+                                let peering_attempt = PeeredHyperdrive::new(hyperdrive.clone());
+                                if let (Ok(peered), Ok(peers)) = (peering_attempt, peers.write()) {
+                                    let driver = DatService::new(client, peered);
+                                    peers.push(PeerState::Peered(driver));
+                                }
                             }
-                            Err(err) => log::error!("Failed to start client: {:?}", err),
+                            Err(err) => log::debug!("Failed to start client: {:?}", err),
                         }
                     }
                     Ok(PeerState::Peered(mut service)) => {
                         if let Ok(Some(message)) =
-                            async_std::future::timeout(Duration::from_secs(5), service.next()).await
+                            async_std::future::timeout(Duration::from_secs(30), service.next())
+                                .await
                         {
                             log::debug!("Dat Message handled {:?}", message);
-                            peers.write().unwrap().push(PeerState::Peered(service));
+                            match peers.write() {
+                                Ok(peers) => peers.push(PeerState::Peered(service)),
+                                Err(_) => log::error!("write contention on peers queue"),
+                            }
                         }
                     }
                     Err(e) => {
                         log::debug!("queue empty: {:?}", e);
-                        task::sleep(Duration::from_secs(1)).await
+                        task::sleep(Duration::from_secs(1)).await;
                     }
                 }
             }

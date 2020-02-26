@@ -339,7 +339,7 @@ pub struct DatService {
     stream: Pin<Box<dyn stream::Stream<Item = ChannelMessage> + Send>>,
 }
 
-async fn should_finish<O, S: std::fmt::Debug, R: std::fmt::Debug>(
+async fn should_finish<O, S, R: std::fmt::Debug>(
     client: &mut Client,
     observer: &mut O,
     result: Result<S, R>,
@@ -347,8 +347,8 @@ async fn should_finish<O, S: std::fmt::Debug, R: std::fmt::Debug>(
 where
     O: DatProtocolEvents + Send + 'static,
 {
-    log::debug!("Result: {:?}", result);
-    if result.is_err() {
+    if let Err(e) = result.as_ref() {
+        log::debug!("Errors: {:?}", e);
         observer.on_finish(client).await;
     }
     result
@@ -359,7 +359,7 @@ impl DatService {
     pub fn new<O>(client: Client, observer: O) -> Self
     where
         O: DatProtocolEvents + Send + 'static,
-        <O as DatProtocolEvents>::Err: std::fmt::Debug + Send,
+        <O as DatProtocolEvents>::Err: std::fmt::Debug + Send + Sync,
     {
         let stream = stream::unfold(
             (client, observer, true),
@@ -378,9 +378,24 @@ impl DatService {
                 };
 
                 log::debug!("READING from socket");
-                let response = client.reader().next().await?;
-                let response = should_finish(&mut client, &mut observer, response).await;
+                // TODO timeout configurable
+                let response =
+                    async_std::future::timeout(Duration::from_secs(5), client.reader().next())
+                        .await;
 
+                let response = match response {
+                    Ok(response) => response,
+                    Err(err) => {
+                        log::debug!(
+                            "Connection timed out during read {:?}. stopping stream",
+                            err
+                        );
+                        observer.on_finish(&mut client).await;
+                        return None;
+                    }
+                };
+
+                let response = should_finish(&mut client, &mut observer, response?).await;
                 match &response {
                     Err(err) => {
                         log::debug!("Error {:?}. stopping stream", err);

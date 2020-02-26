@@ -22,34 +22,49 @@ where
     Storage:
         random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
-    pub fn new(hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>) -> Self {
-        let metadata = PeeredHypercore::new(0, hyperdrive.read().unwrap().metadata.clone());
-        let content = hyperdrive.read().unwrap().content.clone();
+    pub fn new(hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>) -> anyhow::Result<Self> {
+        let metadata = PeeredHypercore::new(
+            0,
+            hyperdrive
+                .read()
+                .map_err(|_| anyhow::anyhow!("Could not aquire metadata lock"))?
+                .metadata
+                .clone(),
+        );
+        let content = hyperdrive
+            .read()
+            .map_err(|_| anyhow::anyhow!("Could not aquire hyperdrive lock"))?
+            .content
+            .clone();
         if let Some(content) = content {
-            return Self {
+            return Ok(Self {
                 metadata,
                 hyperdrive,
                 content: Some(PeeredHypercore::new(1, content)),
                 delay_feed_content: None,
-            };
+            });
         }
-        Self {
+        Ok(Self {
             metadata,
             hyperdrive,
             content: None,
             delay_feed_content: None,
-        }
+        })
     }
 
-    pub fn initialize_content_feed(&mut self, public_key: hypercore::PublicKey) {
+    pub fn initialize_content_feed(
+        &mut self,
+        public_key: hypercore::PublicKey,
+    ) -> anyhow::Result<()> {
         if let None = self.content {
             let feed = self
                 .hyperdrive
                 .write()
-                .unwrap()
-                .readable_content_feed(public_key);
-            self.content = feed.map(|feed| PeeredHypercore::new(1, feed)).ok();
+                .map_err(|_| anyhow::anyhow!("Could not aquire hyperdrive lock"))?
+                .readable_content_feed(public_key)?;
+            self.content = Some(PeeredHypercore::new(1, feed));
         }
+        Ok(())
     }
 }
 
@@ -62,14 +77,14 @@ where
     type Err = anyhow::Error;
 
     async fn on_finish(&mut self, _client: &mut Client) {
-        log::debug!(
-            "Metadata audit: {:?}",
-            self.metadata.write().unwrap().audit()
-        );
-        log::debug!("Metadata len: {:?}", self.metadata.read().unwrap().len());
-        if let Some(ref mut content) = self.content {
-            log::debug!("Content audit: {:?}", content.write().unwrap().audit());
-            log::debug!("Content len: {:?}", content.write().unwrap().len());
+        if let Ok(ref mut metadata) = self.metadata.write() {
+            log::debug!("Metadata audit: {:?}", metadata.audit());
+            log::debug!("Metadata len: {:?}", metadata.len());
+        }
+
+        if let Some(Ok(ref mut content)) = self.content.as_ref().map(|c| c.write()) {
+            log::debug!("Content audit: {:?}", content.audit());
+            log::debug!("Content len: {:?}", content.len());
         }
     }
 
@@ -144,21 +159,25 @@ where
         }
 
         if let None = self.content {
-            let initial_metadata = self.metadata.write().unwrap().get(0);
+            let initial_metadata = self
+                .metadata
+                .write()
+                .map_err(|_| anyhow::anyhow!("Could not aquire hyperdrive lock"))?
+                .get(0);
             if let Ok(Some(initial_metadata)) = initial_metadata {
                 let content: crate::schema::Index = protobuf::parse_from_bytes(&initial_metadata)?;
                 let public_key = hypercore::PublicKey::from_bytes(content.get_content())
                     .context("invalid content key stored in metadata")?;
-                self.initialize_content_feed(public_key);
+                self.initialize_content_feed(public_key)?;
                 let delayed_message = self.delay_feed_content.take();
-                if let Some(ref mut content) = self.content {
-                    content
-                        .on_feed(client, 1, &delayed_message.unwrap())
-                        .await?;
-                    // Simulate a handshake to keep going
-                    content
-                        .on_handshake(client, 1, &proto::Handshake::default())
-                        .await?;
+                if let Some(delayed_message) = delayed_message {
+                    if let Some(ref mut content) = self.content {
+                        content.on_feed(client, 1, &delayed_message).await?;
+                        // Simulate a handshake to keep going
+                        content
+                            .on_handshake(client, 1, &proto::Handshake::default())
+                            .await?;
+                    }
                 }
             }
         }
