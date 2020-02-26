@@ -6,16 +6,17 @@ edition = '2018'
 
 [dependencies]
 anyhow = '1.0.26'
-random-access-storage = '2.0.0'
+random-access-storage = '3.0.0'
 failure = '0.1.6'
-random-access-memory = '1.0.0'
-random-access-disk = '0.8.0'
+random-access-memory = '1.1.0'
+random-access-disk = '1.0.0'
 async-trait = '0.1.24'
 async-std = '1.5.0'
 protobuf = '2.10.1'
 crossbeam-queue = '0.2.1'
 futures = '0.3'
 log = '0.4.8'
+bitfield-rle = '0.1.1'
 
 [dependencies.colmeia-dat1-mdns]
 path = '../colmeia-dat1-mdns'
@@ -23,16 +24,13 @@ path = '../colmeia-dat1-mdns'
 [dependencies.colmeia-dat1-core]
 path = '../colmeia-dat1-core'
 
-[dependencies.bitfield-rle]
-git = 'https://github.com/datrs/bitfield-rle'
-
 [dependencies.colmeia-dat1-proto]
 path = '../colmeia-dat1-proto'
 
 [dependencies.hypercore]
-version = '0.10.0'
+version = '0.11.0'
 git = 'https://github.com/bltavares/hypercore'
-branch = 'bitfield-compress'
+branch = 'wip'
 
 [build-dependencies]
 protobuf-codegen-pure = '2.10.1'

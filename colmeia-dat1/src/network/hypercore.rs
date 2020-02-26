@@ -186,15 +186,15 @@ where
         message: &proto::Data,
     ) -> Result<(), Self::Err> {
         let proof = hypercore::Proof {
-            index: message.get_index() as usize,
+            index: message.get_index(),
             nodes: message
                 .get_nodes()
                 .iter()
                 .map(|node| {
                     hypercore::Node::new(
-                        node.get_index() as usize,
+                        node.get_index(),
                         node.get_hash().to_vec(),
-                        node.get_size() as usize,
+                        node.get_size(),
                     )
                 })
                 .collect(),
@@ -205,7 +205,7 @@ where
             .write()
             .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
             .put(
-                message.get_index() as usize,
+                message.get_index(),
                 if message.has_value() {
                     Some(message.get_value())
                 } else {
