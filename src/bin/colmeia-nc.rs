@@ -1,3 +1,4 @@
+use anyhow::Context;
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
 use colmeia_dat1_proto::*;
@@ -39,12 +40,14 @@ impl SimpleDatClient {
 
 #[async_trait]
 impl DatProtocolEvents for SimpleDatClient {
+    type Err = anyhow::Error;
+
     async fn on_feed(
         &mut self,
         client: &mut Client,
         channel: u64,
         message: &proto::Feed,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         if !self.dat_keys.contains_key(&channel) {
             client
                 .writer()
@@ -54,12 +57,12 @@ impl DatProtocolEvents for SimpleDatClient {
                     message.write_to_bytes().expect("invalid feed message"),
                 ))
                 .await
-                .ok()?;
+                .context("could not send feed")?;
         }
         self.handshake.on_feed(client, channel, message).await?;
         self.dat_keys
             .insert(channel, message.get_discoveryKey().to_vec());
-        Some(())
+        Ok(())
     }
 
     async fn on_handshake(
@@ -67,11 +70,11 @@ impl DatProtocolEvents for SimpleDatClient {
         client: &mut Client,
         channel: u64,
         message: &proto::Handshake,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         self.handshake
             .on_handshake(client, channel, message)
             .await?;
-        Some(())
+        Ok(())
     }
 
     async fn on_finish(&mut self, _client: &mut Client) {

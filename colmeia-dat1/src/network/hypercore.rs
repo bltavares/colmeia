@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::sync::{Arc, RwLock};
 
 use colmeia_dat1_proto::*;
@@ -10,7 +11,7 @@ where
     feed: Arc<RwLock<hypercore::Feed<Storage>>>,
     channel: u64,
     handshake: SimpleDatHandshake,
-    remote_bitfield: hypercore::bitfield::Bitfield,
+    // remote_bitfield: hypercore::bitfield::Bitfield,
     remote_length: usize,
 }
 
@@ -35,7 +36,7 @@ where
             feed,
             channel,
             handshake: SimpleDatHandshake::default(),
-            remote_bitfield: hypercore::bitfield::Bitfield::default(),
+            // remote_bitfield: hypercore::bitfield::Bitfield::default(),
             remote_length: 0,
         }
     }
@@ -47,14 +48,16 @@ where
     Storage:
         random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
 {
+    type Err = anyhow::Error;
+
     async fn on_feed(
         &mut self,
         client: &mut Client,
         channel: u64,
         message: &proto::Feed,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         self.handshake.on_feed(client, channel, message).await?;
-        Some(())
+        Ok(())
     }
 
     async fn on_handshake(
@@ -62,10 +65,9 @@ where
         client: &mut Client,
         channel: u64,
         message: &proto::Handshake,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         if channel != self.channel {
-            // Wrong channel in use
-            return None;
+            return Err(anyhow::anyhow!("Wrong channel in use"));
         }
         self.handshake
             .on_handshake(client, channel, message)
@@ -76,7 +78,7 @@ where
         message.set_length(0); // must be in sizes of 8192 bytes
         client.want(channel, &message).await?;
 
-        Some(())
+        Ok(())
     }
 
     // https://github.com/mafintosh/hypercore/blob/84990baa477491478f79b968123d2233eebeba76/lib/replicate.js#L109-L123
@@ -85,15 +87,25 @@ where
         client: &mut Client,
         channel: u64,
         message: &proto::Want,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         // We only reploy to multiple of 8192 in terms of offsets and lengths for want messages
         // since this is much easier for the bitfield, in terms of paging.
         if (message.get_start() & 8191 != 0) || (message.get_length() & 8191 != 0) {
-            return Some(());
+            return Ok(());
         }
 
-        let feed_length = self.feed.read().unwrap().len() - 1;
-        if self.feed.write().unwrap().has(feed_length) {
+        let feed_length = self
+            .feed
+            .read()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
+            .len()
+            - 1;
+        if self
+            .feed
+            .write()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
+            .has(feed_length)
+        {
             // Eagerly send the length of the feed to the otherside
             // TODO: only send this if the remote is not wanting a region
             // where this is contained in
@@ -104,16 +116,15 @@ where
         let rle = self
             .feed
             .read()
-            .unwrap()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
             .bitfield()
-            .compress(message.get_start() as usize, message.get_length() as usize)
-            .unwrap();
+            .compress(message.get_start() as usize, message.get_length() as usize)?;
         let mut have = proto::Have::new();
         have.set_start(message.get_start());
         have.set_length(message.get_length());
         have.set_bitfield(rle);
         client.have(channel, &have).await?;
-        Some(())
+        Ok(())
     }
 
     // https://github.com/mafintosh/hypercore/blob/84990baa477491478f79b968123d2233eebeba76/lib/replicate.js#L295-L343
@@ -122,10 +133,12 @@ where
         client: &mut Client,
         channel: u64,
         message: &proto::Have,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         // TODO implement setting the length and request data on metadata
         if message.has_bitfield() {
-            let buf = bitfield_rle::decode(message.get_bitfield()).ok()?;
+            let buf = bitfield_rle::decode(message.get_bitfield())
+                .map_err(failure::Error::compat)
+                .context("could not decode bitfield")?;
             let bits = buf.len() * 8;
             // TODO
             // Compare bitfields
@@ -153,7 +166,7 @@ where
                 self.remote_length = start
             }
         }
-        // .expect("invalid bitfield");
+        // .context("invalid bitfield");
 
         // SEND REQUEST
         // TODO loop on length
@@ -163,7 +176,7 @@ where
             request.set_index(index);
             client.request(channel, &request).await?;
         }
-        Some(())
+        Ok(())
     }
 
     async fn on_data(
@@ -171,7 +184,7 @@ where
         _client: &mut Client,
         _channel: u64,
         message: &proto::Data,
-    ) -> Option<()> {
+    ) -> Result<(), Self::Err> {
         let proof = hypercore::Proof {
             index: message.get_index() as usize,
             nodes: message
@@ -190,7 +203,7 @@ where
 
         self.feed
             .write()
-            .unwrap()
+            .map_err(|_| anyhow::anyhow!("Could not aquire feed lock"))?
             .put(
                 message.get_index() as usize,
                 if message.has_value() {
@@ -200,7 +213,8 @@ where
                 },
                 proof,
             )
-            .expect("could not write data to feed");
-        Some(())
+            .map_err(failure::Error::compat)
+            .context("could not write data to feed")?;
+        Ok(())
     }
 }

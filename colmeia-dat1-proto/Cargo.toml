@@ -10,13 +10,9 @@ log = '0.4.8'
 protobuf = '2.10.1'
 rand = '0.7.3'
 salsa20 = '0.4.0'
-async-trait = "0.1.24"
-
-[dependencies.simple-message-channels]
-version = '0.1.0'
-# path = '../../datrs/simple-message-channels'
-git = 'https://github.com/bltavares/simple-message-channels'
-branch = 'remove-bufferin'
+async-trait = '0.1.24'
+anyhow = '1.0.26'
+simple-message-channels = '0.2.0'
 
 [dependencies.colmeia-dat1-core]
 path = '../colmeia-dat1-core'

@@ -20,8 +20,9 @@ fn main() {
         _ => panic!("invalid hash key"),
     };
 
-    let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:3899".parse().unwrap());
-    dat.with_discovery(vec![dat.lan()]);
+    let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:3899".parse().unwrap())
+        .expect("could not start dat");
+    dat.with_discovery(dat.lan());
 
     async_std::task::block_on(dat.sync());
 }
