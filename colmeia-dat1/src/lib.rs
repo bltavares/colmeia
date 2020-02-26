@@ -82,8 +82,8 @@ where
 {
     pub fn lan(&self) -> impl Stream<Item = SocketAddr> {
         let mut mdns = colmeia_dat1_mdns::Mdns::new(self.key.clone());
-        mdns.with_announcer(self.listen_address.port());
-        // .with_location(Duration::from_secs(60));
+        mdns.with_announcer(self.listen_address.port())
+            .with_location(Duration::from_secs(60));
         mdns
     }
 
