@@ -29,10 +29,19 @@ pub extern "C" fn colmeia_dat1_sync() {
     }));
 
     let key = "dat://6268b99fbacacea49c6bc3d4776b606db2aeadb3fa831342ba9f70d55c98929f";
-    let dat_key = colmeia_dat1_core::parse(&key).expect("invalid dat argument");
+    let dat_key = match colmeia_dat1_core::parse(&key) {
+        Ok(dat_key) => dat_key,
+        _ => {
+            log::error!("invalid dat key");
+            return;
+        }
+    };
     let dat_key = match dat_key {
         colmeia_dat1_core::DatUrlResolution::HashUrl(result) => result,
-        _ => panic!("invalid hash key"),
+        _ => {
+            log::error!("invalid hash key");
+            return;
+        }
     };
 
     let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:43898".parse().unwrap());
