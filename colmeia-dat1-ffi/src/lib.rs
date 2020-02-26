@@ -45,7 +45,7 @@ pub extern "C" fn colmeia_dat1_sync() {
     };
 
     let mut dat = colmeia_dat1::Dat::in_memory(dat_key, "0.0.0.0:43898".parse().unwrap());
-    dat.with_discovery(vec![dat.lan()]);
+    dat.with_discovery(dat.lan());
     log::warn!("Starting");
     async_std::task::spawn(async {
         let stream = std::panic::AssertUnwindSafe(dat.sync());
