@@ -8,8 +8,10 @@ use crate::network::hypercore::PeeredHypercore;
 
 pub struct PeeredHyperdrive<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     metadata: PeeredHypercore<Storage>,
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
@@ -19,8 +21,10 @@ where
 
 impl<Storage> PeeredHyperdrive<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     pub fn new(hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>) -> anyhow::Result<Self> {
         let metadata = PeeredHypercore::new(
@@ -71,8 +75,10 @@ where
 #[async_trait]
 impl<Storage> DatProtocolEvents for PeeredHyperdrive<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     type Err = anyhow::Error;
 

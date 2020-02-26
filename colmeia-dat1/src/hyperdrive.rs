@@ -3,8 +3,10 @@ use std::sync::{Arc, RwLock};
 
 pub struct Hyperdrive<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     pub(crate) metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
     pub(crate) content: Option<Arc<RwLock<hypercore::Feed<Storage>>>>,
@@ -13,8 +15,10 @@ where
 
 impl<Storage> Hyperdrive<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     pub fn readable_content_feed(
         &mut self,
@@ -23,7 +27,6 @@ where
         if let Some(storage) = self.content_storage.take() {
             let feed = hypercore::Feed::builder(public_key, storage)
                 .build()
-                .map_err(failure::Error::compat)
                 .context("Could not start hypercore feed")?;
 
             self.content = Some(Arc::new(RwLock::new(feed)));
@@ -38,17 +41,13 @@ pub fn in_memmory(
 ) -> anyhow::Result<Hyperdrive<random_access_memory::RandomAccessMemory>> {
     let metadata = hypercore::Feed::builder(
         public_key,
-        hypercore::Storage::new_memory()
-            .map_err(failure::Error::compat)
-            .context("could not page feed memory")?,
+        hypercore::Storage::new_memory().context("could not page feed memory")?,
     )
     .build()
-    .map_err(failure::Error::compat)
     .context("Could not start feed")?;
 
-    let content_storage = hypercore::Storage::new_memory()
-        .map_err(failure::Error::compat)
-        .context("could not initialize the content storage")?;
+    let content_storage =
+        hypercore::Storage::new_memory().context("could not initialize the content storage")?;
 
     Ok(Hyperdrive {
         content_storage: Some(content_storage),
@@ -64,16 +63,12 @@ pub fn in_disk<P: AsRef<std::path::PathBuf>>(
 ) -> anyhow::Result<Hyperdrive<random_access_disk::RandomAccessDisk>> {
     let metadata = hypercore::Feed::builder(
         public_key,
-        hypercore::Storage::new_disk(metadata.as_ref())
-            .map_err(failure::Error::compat)
-            .context("could not page feed memory")?,
+        hypercore::Storage::new_disk(metadata.as_ref()).context("could not page feed memory")?,
     )
     .build()
-    .map_err(failure::Error::compat)
     .context("Could not start feed")?;
 
     let content_storage = hypercore::Storage::new_disk(content.as_ref())
-        .map_err(failure::Error::compat)
         .context("could not initialize the content storage")?;
 
     Ok(Hyperdrive {

@@ -5,8 +5,10 @@ use colmeia_dat1_proto::*;
 
 pub struct PeeredHypercore<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     feed: Arc<RwLock<hypercore::Feed<Storage>>>,
     channel: u64,
@@ -17,8 +19,10 @@ where
 
 impl<Storage> std::ops::Deref for PeeredHypercore<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     type Target = Arc<RwLock<hypercore::Feed<Storage>>>;
     fn deref(&self) -> &Self::Target {
@@ -28,8 +32,10 @@ where
 
 impl<Storage> PeeredHypercore<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     pub fn new(channel: u64, feed: Arc<RwLock<hypercore::Feed<Storage>>>) -> Self {
         Self {
@@ -45,8 +51,10 @@ where
 #[async_trait]
 impl<Storage> DatProtocolEvents for PeeredHypercore<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     type Err = anyhow::Error;
 
@@ -137,7 +145,7 @@ where
         // TODO implement setting the length and request data on metadata
         if message.has_bitfield() {
             let buf = bitfield_rle::decode(message.get_bitfield())
-                .map_err(failure::Error::compat)
+                .map_err(|e| anyhow::anyhow!(e))
                 .context("could not decode bitfield")?;
             let bits = buf.len() * 8;
             // TODO
@@ -213,7 +221,6 @@ where
                 },
                 proof,
             )
-            .map_err(failure::Error::compat)
             .context("could not write data to feed")?;
         Ok(())
     }

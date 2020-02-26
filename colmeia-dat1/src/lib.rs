@@ -27,7 +27,7 @@ enum PeerState {
 
 pub struct Dat<Storage>
 where
-    Storage: random_access_storage::RandomAccess<Error = failure::Error>
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
         + std::fmt::Debug
         + Send
         + Sync
@@ -75,8 +75,10 @@ impl Dat<random_access_memory::RandomAccessMemory> {
 
 impl<Storage> Dat<Storage>
 where
-    Storage:
-        random_access_storage::RandomAccess<Error = failure::Error> + std::fmt::Debug + Send + Sync,
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
 {
     pub fn lan(&self) -> impl Stream<Item = SocketAddr> {
         let mut mdns = colmeia_dat1_mdns::Mdns::new(self.key.clone());

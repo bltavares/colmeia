@@ -7,16 +7,26 @@ edition = '2018'
 [dependencies]
 anyhow = '1.0.26'
 random-access-storage = '3.0.0'
-failure = '0.1.6'
-random-access-memory = '1.1.0'
-random-access-disk = '1.0.0'
 async-trait = '0.1.24'
 async-std = '1.5.0'
 protobuf = '2.10.1'
 crossbeam-queue = '0.2.1'
 futures = '0.3'
 log = '0.4.8'
-bitfield-rle = '0.1.1'
+
+[dependencies.bitfield-rle]
+version = '0.1.1'
+path = '../../datrs/bitfield-rle'
+
+[dependencies.random-access-disk]
+version = '1.0.0'
+git = 'https://github.com/bltavares/random-access-disk'
+branch = 'failure-into-stderr'
+
+[dependencies.random-access-memory]
+version = '1.1.0'
+git = 'https://github.com/bltavares/random-access-memory'
+branch = 'failure-into-stderr'
 
 [dependencies.colmeia-dat1-mdns]
 path = '../colmeia-dat1-mdns'
