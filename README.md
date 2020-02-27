@@ -12,10 +12,11 @@ Write a pure rust network stack compatible with dat, to be able to run it on des
 - [x] Generate a binary that finds and talk to a LAN `dat` node: handshake and disconnect
 - [x] Compile to Android
 - [ ] **next** Create a connection pool that tracks dat peers, and track hypercore version to allow crossing bridges
-- [ ] Bundle the binary into a Flutter app that displays the connection pool of dat peers for a given dat url
-- [ ] *(stretch goal)* Write a Flutter app (micro-app as in a  micro-service) that syncs and share files, allowing to build other local-first apps without needing to bundle the network stack logic (like [dat-desktop](https://github.com/dat-land/dat-desktop) but for mobile and desktop without Node)
+- [ ] Bundle the static library into a Flutter app (**validated as viable already**) that displays the connection pool of dat peers for a given dat url (needs work)
+- [ ] *(stretch goal)* **validated as viable already**  Write a Flutter app (micro-app as in a  micro-service) that syncs and share files, allowing to build other local-first apps without needing to bundle the network stack logic (like [dat-desktop](https://github.com/dat-land/dat-desktop) but for mobile and desktop without Node)
 - [ ] *(stretch-er goal)* WASM and websocket integration
-- [ ] *(stretch-er goal)* FFI bindings to be able to link into an iOS app and other languages ([neon](https://neon-bindings.com/)?/[helix](https://usehelix.com/)?/[dart ffi](https://users.rust-lang.org/t/ffi-support-in-dart/32375)?).
+- [ ] *(stretch-er goal)* **validated as viable already** FFI bindings to be able to link into an iOS app and other languages ([neon](https://neon-bindings.com/)?/[helix](https://usehelix.com/)?/[dart ffi](https://users.rust-lang.org/t/ffi-support-in-dart/32375)?).
+
 
 ## References
 
