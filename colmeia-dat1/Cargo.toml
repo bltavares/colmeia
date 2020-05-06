@@ -29,7 +29,8 @@ git = 'https://github.com/bltavares/random-access-memory'
 branch = 'failure-into-stderr'
 
 [dependencies.async-std]
-version = '1.5.0'
+git = 'https://github.com/async-std/async-std'
+branch = 'fix-atomic-32'
 features = ['unstable']
 
 [dependencies.colmeia-dat1-mdns]

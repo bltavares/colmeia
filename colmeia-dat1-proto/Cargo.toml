@@ -18,7 +18,8 @@ simple-message-channels = '0.2.0'
 path = '../colmeia-dat1-core'
 
 [dependencies.async-std]
-version = '1.5.0'
+git = 'https://github.com/async-std/async-std'
+branch = 'fix-atomic-32'
 features = ['unstable']
 
 [build-dependencies]

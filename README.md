@@ -128,9 +128,9 @@ RUST_LOG=debug cargo run --bin colmeia-clone -- 192.168.15.173:3282 dat://6268b9
 DEBUG="dat*" npx dat share
 ```
 
-## Android
+## Platforms
 
-### Direct compilation
+### Android Direct compilation
 
 - **No root required**
 
@@ -164,10 +164,11 @@ cross build --target armv7-linux-androideabi
 - To find the correct target for your device: `adb shell uname -m`
 
 | arch             | target                  |
-|------------------|-------------------------|
+| ---------------- | ----------------------- |
 | armv7l           | armv7-linux-androideabi |
 | aarch64 or arm64 | aarch64-linux-android   |
 | arm*             | arm-linux-androideabi   |
+| mips-musl        | mips-unknown-linux-musl |
 
 *arm: ([seems to be broken](https://internals.rust-lang.org/t/what-is-the-current-status-of-arm-linux-androideabi/4507/7))
 
@@ -227,3 +228,14 @@ cargo install cargo-lipo
 ```sh
 make ios
 ```
+
+### OpenWRT
+
+It compiles with OpenWRT. Tested with 2 different routers on `18.06.1` and `19.07.2`.
+
+Run and `scp` the binaries on `target/mips-unknown-linux-musl`:
+
+```sh
+ cross build --target mips-unknown-linux-musl
+ ```
+ 
