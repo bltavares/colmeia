@@ -10,6 +10,7 @@ trust-dns-proto = '0.19.5'
 socket2 = '0.3.12'
 lazy_static = '1.4.0'
 log = '0.4.8'
+futures = '0.3.5'
 
 [dependencies.async-std]
 version = '1.6.0'

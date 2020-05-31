@@ -1,27 +1,9 @@
-use std::str::FromStr;
-use trust_dns_proto::op::{Message, MessageType, Query};
-use trust_dns_proto::rr::{Name, RecordType};
-use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
-
 static HYPERSWARM_DOMAIN: &'static str = ".hyperswarm.local";
 
+pub mod locator;
 pub mod socket;
 
-pub fn packet(hyperswarm_domain: &str) -> Vec<u8> {
-    let name = Name::from_str(hyperswarm_domain).expect("could not write name");
-    let query = Query::query(name, RecordType::SRV);
-    let mut message = Message::new();
-    message
-        .set_id(0)
-        .set_message_type(MessageType::Query)
-        .set_authoritative(false)
-        .add_query(query);
-
-    let mut buffer = Vec::with_capacity(75);
-    let mut encoder = BinEncoder::new(&mut buffer);
-    message.emit(&mut encoder).expect("could not encode");
-    buffer
-}
+pub use locator::Locator;
 
 /// {hash}.hyperswarm.local
 fn domain_name(hash: &str) -> String {

@@ -1,10 +1,7 @@
-use async_std::net::UdpSocket as AsyncUdpSocket;
 use socket2::{Domain, Protocol, Socket, Type};
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
-use std::sync::Arc;
 use std::time::Duration;
-use trust_dns_proto::op::Message;
 
 const IPV4_MULTICAST: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 251);
 lazy_static::lazy_static! {

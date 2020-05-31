@@ -337,6 +337,7 @@ name = "colmeia-hyperswarm-mdns"
 version = "0.1.0"
 dependencies = [
  "async-std",
+ "futures",
  "hex",
  "lazy_static",
  "log",
