@@ -15,9 +15,9 @@ fn main() {
                 .expect("could not parse data");
 
         if let DatUrlResolution::HashUrl(hash) = parse_result {
-            let mut locator = Locator::new(hash.discovery_key(), Duration::from_secs(5));
+            let mut locator = Locator::new(hash.discovery_key(), Duration::from_secs(10));
             while let Some(response) = locator.next().await {
-                println!("{:?}", response);
+                println!("Peer found: {:?}", response);
             }
         } else {
             println!("this is a regular DNS")

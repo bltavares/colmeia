@@ -27,7 +27,7 @@ pub fn packet(hyperswarm_domain: &str) -> Vec<u8> {
     buffer
 }
 
-async fn broadcast(mdns_url: String, socket: Arc<AsyncUdpSocket>) {
+async fn broadcast(mdns_url: String, socket: &AsyncUdpSocket) {
     let mdns_packet_bytes = packet(&mdns_url);
 
     socket
@@ -37,7 +37,7 @@ async fn broadcast(mdns_url: String, socket: Arc<AsyncUdpSocket>) {
 }
 
 // Only works for ipv4 mdns
-async fn wait_response(socket: Arc<AsyncUdpSocket>) -> Result<(Vec<u8>, Ipv4Addr), std::io::Error> {
+async fn wait_response(socket: &AsyncUdpSocket) -> Result<(Vec<u8>, Ipv4Addr), std::io::Error> {
     let mut buffer = [0; 512];
     let (read_size, origin_ip) = socket.recv_from(&mut buffer).await?;
 
@@ -69,14 +69,14 @@ impl Locator {
         let broadcast_stream = stream::unfold(
             (mdns_url.clone(), socket.clone()),
             |(packet, socket)| async move {
-                broadcast(packet.clone(), socket.clone()).await;
+                broadcast(packet.clone(), &socket).await;
                 Some(((), (packet, socket)))
             },
         )
         .throttle(announcement_window);
 
         let response_stream = stream::unfold(socket, |socket| async move {
-            let response = wait_response(socket.clone()).await;
+            let response = wait_response(&socket).await;
             Some((response, socket))
         })
         .filter_map(|item| item.ok())
