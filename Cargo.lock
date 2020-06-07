@@ -131,17 +131,18 @@ checksum = "b41b7ea54a0c9d92199de89e20e58d49f02f8e699814ef3fdf266f6f748d15c7"
 [[package]]
 name = "bitfield-rle"
 version = "0.1.1"
-source = "git+https://github.com/bltavares/bitfield-rle?branch=failure-into-stderr#8d7c6148795513605445f096e24ac7e0c3af48ce"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da774d99b14ddc23a9ac1a56ed5deed16bf00f6dbf1ae65a77c73a97342c9a6"
 dependencies = [
- "anyhow",
+ "failure",
  "varinteger",
 ]
 
 [[package]]
 name = "bitfield-rle"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5da774d99b14ddc23a9ac1a56ed5deed16bf00f6dbf1ae65a77c73a97342c9a6"
+checksum = "3f8acc105b7bd3ed61e4bb7ad3e3b3f2a8da72205b2e0408cf71a499e8f57dd0"
 dependencies = [
  "failure",
  "varinteger",
@@ -260,7 +261,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "bitfield-rle 0.1.1 (git+https://github.com/bltavares/bitfield-rle?branch=failure-into-stderr)",
+ "bitfield-rle 0.2.0",
  "colmeia-dat1-core",
  "colmeia-dat1-mdns",
  "colmeia-dat1-proto",
@@ -454,9 +455,9 @@ dependencies = [
 
 [[package]]
 name = "failure"
-version = "0.1.6"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8273f13c977665c5db7eb2b99ae520952fe5ac831ae4cd09d80c4c7042b5ed9"
+checksum = "d32e9bd16cc02eae7db7ef620b392808b89f6a5e16bb3497d159c6b92a0f4f86"
 dependencies = [
  "backtrace",
  "failure_derive",
@@ -464,9 +465,9 @@ dependencies = [
 
 [[package]]
 name = "failure_derive"
-version = "0.1.6"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bc225b78e0391e4b8683440bf2e63c2deeeb2ce5189eab46e2b68c6d3725d08"
+checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -678,7 +679,7 @@ version = "0.11.0"
 source = "git+https://github.com/bltavares/hypercore?branch=wip#67954dfb490ae217b9abc253b5a6fcd6187c1c0d"
 dependencies = [
  "anyhow",
- "bitfield-rle 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitfield-rle 0.1.1",
  "blake2-rfc",
  "byteorder",
  "ed25519-dalek",
