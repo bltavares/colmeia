@@ -17,8 +17,7 @@ anyhow = '1.0.26'
 path = '../colmeia-dat1-core'
 
 [dependencies.async-std]
-git = 'https://github.com/async-std/async-std'
-branch = 'fix-atomic-32'
+version = '1.6.0'
 features = ['unstable']
 
 [dependencies.socket2]

@@ -26,8 +26,7 @@ path = 'colmeia-dat1-mdns'
 path = 'colmeia-dat1-proto'
 
 [dependencies.async-std]
-git = 'https://github.com/async-std/async-std'
-branch = 'fix-atomic-32'
+version = '1.6.0'
 features = ['unstable']
 
 [dependencies.colmeia-dat1-core]
@@ -35,6 +34,3 @@ path = 'colmeia-dat1-core'
 
 [dependencies.colmeia-dat1]
 path = 'colmeia-dat1'
-[patch.crates-io.async-std]
-git = 'https://github.com/async-std/async-std'
-branch = 'fix-atomic-32'
