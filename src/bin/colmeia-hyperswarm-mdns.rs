@@ -15,7 +15,8 @@ fn main() {
                 .expect("could not parse data");
 
         if let DatUrlResolution::HashUrl(hash) = parse_result {
-            let mut locator = Locator::new(hash.discovery_key(), Duration::from_secs(10));
+            let mut locator = Locator::new(hash.discovery_key(), Duration::from_secs(10))
+                .expect("could not initiate our locator");
             while let Some(response) = locator.next().await {
                 println!("Peer found: {:?}", response);
             }

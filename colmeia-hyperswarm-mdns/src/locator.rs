@@ -10,10 +10,10 @@ use std::time::Duration;
 use trust_dns_proto::op::{Message, MessageType, Query};
 use trust_dns_proto::rr::{Name, RData, Record, RecordType};
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
+use anyhow::Context;
 
-pub fn packet(hyperswarm_domain: &str) -> Vec<u8> {
-    let name = Name::from_str(hyperswarm_domain).expect("could not write name");
-    let query = Query::query(name, RecordType::SRV);
+pub fn packet(hyperswarm_domain: Name) -> anyhow::Result<Vec<u8>> {
+    let query = Query::query(hyperswarm_domain, RecordType::SRV);
     let mut message = Message::new();
     message
         .set_id(0)
@@ -23,17 +23,22 @@ pub fn packet(hyperswarm_domain: &str) -> Vec<u8> {
 
     let mut buffer = Vec::with_capacity(75);
     let mut encoder = BinEncoder::new(&mut buffer);
-    message.emit(&mut encoder).expect("could not encode");
-    buffer
+    message.emit(&mut encoder).context("malformed mdns packet")?;
+    Ok(buffer)
 }
 
-async fn broadcast(mdns_url: String, socket: &AsyncUdpSocket) {
-    let mdns_packet_bytes = packet(&mdns_url);
+async fn broadcast(
+    hyperswarm_domain: Name,
+    socket: &AsyncUdpSocket,
+) -> anyhow::Result<()> {
+    let mdns_packet_bytes = packet(hyperswarm_domain)?;
 
     socket
         .send_to(&mdns_packet_bytes, *crate::socket::MULTICAST_DESTINATION)
         .await
-        .expect("Could not send bytes");
+        .context("could not send packet to multicast address")?;
+
+    Ok(())
 }
 
 // Only works for ipv4 mdns
@@ -56,21 +61,26 @@ pub struct Locator {
 }
 
 impl Locator {
-    pub fn new(hash: &[u8], announcement_window: Duration) -> Self {
-        let mdns_url = crate::hash_to_domain(hash);
-        println!("Parse result: {:?}", mdns_url);
+    pub fn new(hash: &[u8], announcement_window: Duration) -> anyhow::Result<Self> {
+        let hyperswarm_domain = crate::hash_to_domain(hash);
+        println!("Parse result: {:?}", hyperswarm_domain);
 
-        // Criar socket e enviar para Destination: 224.0.0.251
-        let socket = crate::socket::create_shared().expect("Could not create socket");
+        let hyperswarm_domain = Name::from_str(&hyperswarm_domain).context("could not create hyperswarm dns name from provided hash")?;
+
+        let socket = crate::socket::create_shared().context("could not allocate a new socket")?;
         println!("Socket: {:?}", socket);
 
         let socket = Arc::from(AsyncUdpSocket::from(socket));
 
         let broadcast_stream = stream::unfold(
-            (mdns_url.clone(), socket.clone()),
-            |(packet, socket)| async move {
-                broadcast(packet.clone(), &socket).await;
-                Some(((), (packet, socket)))
+            (hyperswarm_domain.clone(), socket.clone()),
+            |(hyperswarm_domain, socket)| async move {
+                let broadcast_result = broadcast(hyperswarm_domain.clone(), &socket).await;
+                if let Err(problem) = broadcast_result {
+                    // todo convert into log::error call
+                    println!("deu ruim {:?}. tentando novamente mais tarde", problem);
+                }
+                Some(((), (hyperswarm_domain, socket)))
             },
         )
         .throttle(announcement_window);
@@ -81,13 +91,13 @@ impl Locator {
         })
         .filter_map(|item| item.ok())
         .filter_map(move |(packet, origin_ip)| {
-            select_ip_from_hyperswarm_mdns_response(packet, origin_ip, &mdns_url)
+            select_ip_from_hyperswarm_mdns_response(packet, origin_ip, &hyperswarm_domain)
         });
 
-        Locator {
+        Ok(Locator {
             broadcast_stream: Box::pin(broadcast_stream),
             response_stream: Box::pin(response_stream),
-        }
+        })
     }
 }
 
@@ -100,11 +110,8 @@ lazy_static::lazy_static! {
 fn select_ip_from_hyperswarm_mdns_response(
     packet: Vec<u8>,
     origin_ip: Ipv4Addr,
-    hyperswarm_domain: &str,
+    hyperswarm_domain: &Name,
 ) -> Option<SocketAddr> {
-    // TODO: use a single Name for packet generation and packet comparison
-    let name = Name::from_str(hyperswarm_domain).expect("could not write name");
-
     let dns_message = Message::from_vec(&packet).ok()?;
     if dns_message.answer_count() != 3 {
         return None;
@@ -119,7 +126,9 @@ fn select_ip_from_hyperswarm_mdns_response(
         false
     })?;
 
-    let srv_matches = answers.iter().find(|record| record.name() == &name)?;
+    let srv_matches = answers
+        .iter()
+        .find(|record| record.name() == hyperswarm_domain)?;
     if let RData::SRV(srv_data) = srv_matches.rdata() {
         let port = srv_data.port();
         if srv_data.target() == &*UNSPECIFIED_NAME {
