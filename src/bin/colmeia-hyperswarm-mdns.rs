@@ -9,6 +9,8 @@ use std::time::Duration;
 // b62ef6792a0e2f2c5be328593532415d80c0f52c // 32 bytes
 // Derivacao igual ao dat1
 fn main() {
+    env_logger::init();
+
     task::block_on(async {
         let parse_result =
             parse("7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5")
@@ -17,6 +19,7 @@ fn main() {
         if let DatUrlResolution::HashUrl(hash) = parse_result {
             let mut locator = Locator::new(hash.discovery_key(), Duration::from_secs(10))
                 .expect("could not initiate our locator");
+
             while let Some(response) = locator.next().await {
                 println!("Peer found: {:?}", response);
             }

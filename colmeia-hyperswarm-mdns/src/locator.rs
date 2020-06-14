@@ -1,3 +1,4 @@
+use anyhow::Context;
 use async_std::net::UdpSocket as AsyncUdpSocket;
 use async_std::stream::StreamExt;
 use async_std::task;
@@ -10,7 +11,6 @@ use std::time::Duration;
 use trust_dns_proto::op::{Message, MessageType, Query};
 use trust_dns_proto::rr::{Name, RData, Record, RecordType};
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
-use anyhow::Context;
 
 pub fn packet(hyperswarm_domain: Name) -> anyhow::Result<Vec<u8>> {
     let query = Query::query(hyperswarm_domain, RecordType::SRV);
@@ -23,14 +23,13 @@ pub fn packet(hyperswarm_domain: Name) -> anyhow::Result<Vec<u8>> {
 
     let mut buffer = Vec::with_capacity(75);
     let mut encoder = BinEncoder::new(&mut buffer);
-    message.emit(&mut encoder).context("malformed mdns packet")?;
+    message
+        .emit(&mut encoder)
+        .context("malformed mdns packet")?;
     Ok(buffer)
 }
 
-async fn broadcast(
-    hyperswarm_domain: Name,
-    socket: &AsyncUdpSocket,
-) -> anyhow::Result<()> {
+async fn broadcast(hyperswarm_domain: Name, socket: &AsyncUdpSocket) -> anyhow::Result<()> {
     let mdns_packet_bytes = packet(hyperswarm_domain)?;
 
     socket
@@ -47,8 +46,8 @@ async fn wait_response(socket: &AsyncUdpSocket) -> Result<(Vec<u8>, Ipv4Addr), s
     let (read_size, origin_ip) = socket.recv_from(&mut buffer).await?;
 
     if let SocketAddr::V4(origin_ip) = origin_ip {
-        let debug_vec: Vec<_> = buffer.iter().take(read_size).cloned().collect();
-        return Ok((debug_vec, origin_ip.ip().clone()));
+        let packet_data: Vec<_> = buffer.iter().take(read_size).cloned().collect();
+        return Ok((packet_data, origin_ip.ip().clone()));
     }
     // TODO make this a generic error
     // rataria: using a random error code
@@ -63,12 +62,13 @@ pub struct Locator {
 impl Locator {
     pub fn new(hash: &[u8], announcement_window: Duration) -> anyhow::Result<Self> {
         let hyperswarm_domain = crate::hash_to_domain(hash);
-        println!("Parse result: {:?}", hyperswarm_domain);
+        log::debug!("hyperswarm domain: {:?}", hyperswarm_domain);
 
-        let hyperswarm_domain = Name::from_str(&hyperswarm_domain).context("could not create hyperswarm dns name from provided hash")?;
+        let hyperswarm_domain = Name::from_str(&hyperswarm_domain)
+            .context("could not create hyperswarm dns name from provided hash")?;
 
         let socket = crate::socket::create_shared().context("could not allocate a new socket")?;
-        println!("Socket: {:?}", socket);
+        log::debug!("allocated socket {:?}", socket);
 
         let socket = Arc::from(AsyncUdpSocket::from(socket));
 
@@ -77,8 +77,10 @@ impl Locator {
             |(hyperswarm_domain, socket)| async move {
                 let broadcast_result = broadcast(hyperswarm_domain.clone(), &socket).await;
                 if let Err(problem) = broadcast_result {
-                    // todo convert into log::error call
-                    println!("deu ruim {:?}. tentando novamente mais tarde", problem);
+                    log::warn!(
+                        "failed to broadcast a packet. trying again later. {:?}",
+                        problem
+                    );
                 }
                 Some(((), (hyperswarm_domain, socket)))
             },
