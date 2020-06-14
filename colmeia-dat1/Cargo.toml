@@ -19,7 +19,6 @@ features = ['unstable']
 
 [dependencies.bitfield-rle]
 version = "0.2.0"
-branch = 'failure-into-stderr'
 
 [dependencies.random-access-disk]
 version = '1.0.0'
