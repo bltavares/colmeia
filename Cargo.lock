@@ -343,6 +343,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "log",
+ "rand",
  "socket2",
  "trust-dns-proto",
 ]

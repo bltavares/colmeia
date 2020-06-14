@@ -9,7 +9,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use trust_dns_proto::op::{Message, MessageType, Query};
-use trust_dns_proto::rr::{Name, RData, Record, RecordType};
+use trust_dns_proto::rr::{Name, RData, RecordType};
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
 
 pub fn packet(hyperswarm_domain: Name) -> anyhow::Result<Vec<u8>> {
@@ -41,7 +41,7 @@ async fn broadcast(hyperswarm_domain: Name, socket: &AsyncUdpSocket) -> anyhow::
 }
 
 // Only works for ipv4 mdns
-async fn wait_response(socket: &AsyncUdpSocket) -> Result<(Vec<u8>, Ipv4Addr), std::io::Error> {
+async fn wait_response(socket: &AsyncUdpSocket) -> anyhow::Result<(Vec<u8>, Ipv4Addr)> {
     let mut buffer = [0; 512];
     let (read_size, origin_ip) = socket.recv_from(&mut buffer).await?;
 
@@ -49,9 +49,11 @@ async fn wait_response(socket: &AsyncUdpSocket) -> Result<(Vec<u8>, Ipv4Addr), s
         let packet_data: Vec<_> = buffer.iter().take(read_size).cloned().collect();
         return Ok((packet_data, origin_ip.ip().clone()));
     }
-    // TODO make this a generic error
-    // rataria: using a random error code
-    Err(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "not ipv4").into())
+
+    Err(anyhow::anyhow!(
+        "packet response is not ipv4, {:?}",
+        origin_ip
+    ))
 }
 
 pub struct Locator {
@@ -60,7 +62,11 @@ pub struct Locator {
 }
 
 impl Locator {
-    pub fn new(hash: &[u8], announcement_window: Duration) -> anyhow::Result<Self> {
+    pub fn new(
+        hash: &[u8],
+        self_id: crate::OwnedSelfId,
+        announcement_window: Duration,
+    ) -> anyhow::Result<Self> {
         let hyperswarm_domain = crate::hash_to_domain(hash);
         log::debug!("hyperswarm domain: {:?}", hyperswarm_domain);
 
@@ -93,7 +99,7 @@ impl Locator {
         })
         .filter_map(|item| item.ok())
         .filter_map(move |(packet, origin_ip)| {
-            select_ip_from_hyperswarm_mdns_response(packet, origin_ip, &hyperswarm_domain)
+            select_ip_from_hyperswarm_mdns_response(packet, origin_ip, &hyperswarm_domain, &self_id)
         });
 
         Ok(Locator {
@@ -104,8 +110,6 @@ impl Locator {
 }
 
 lazy_static::lazy_static! {
-    // TODO Generate one SELF_ID for each program execution
-    static ref SELF_ID: [Box<[u8]>; 1] = [b"id=banana".to_vec().into_boxed_slice()];
     static ref UNSPECIFIED_NAME: Name = Name::from_str("0.0.0.0").unwrap();
 }
 
@@ -113,6 +117,7 @@ fn select_ip_from_hyperswarm_mdns_response(
     packet: Vec<u8>,
     origin_ip: Ipv4Addr,
     hyperswarm_domain: &Name,
+    self_id: crate::SelfId,
 ) -> Option<SocketAddr> {
     let dns_message = Message::from_vec(&packet).ok()?;
     if dns_message.answer_count() != 3 {
@@ -120,13 +125,15 @@ fn select_ip_from_hyperswarm_mdns_response(
     }
 
     let answers = dns_message.answers();
-    // TODO be more explicit on this logic and early return
-    let _id_different = answers.iter().find(|record: &&Record| {
+    let id_different_from_self = answers.iter().find(|record| {
         if let RData::TXT(txt_data) = record.rdata() {
-            return txt_data.txt_data() != &*SELF_ID;
+            return txt_data.txt_data() != self_id;
         }
         false
-    })?;
+    });
+    if let Some(_) = id_different_from_self {
+        return None;
+    }
 
     let srv_matches = answers
         .iter()

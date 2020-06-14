@@ -21,3 +21,14 @@ pub fn hash_to_domain(hash: &[u8]) -> String {
     let hash_as_str = bytes_to_hash(hash);
     domain_name(&hash_as_str)
 }
+
+type OwnedSelfId = [Box<[u8]>; 1];
+type SelfId<'a> = &'a [Box<[u8]>];
+
+pub fn self_id() -> OwnedSelfId {
+    use rand::Rng;
+
+    let generated_id: [u8; 32] = rand::thread_rng().gen();
+    let self_id = format!("id={}", hex::encode(generated_id)).into_bytes();
+    [self_id.into_boxed_slice()]
+}

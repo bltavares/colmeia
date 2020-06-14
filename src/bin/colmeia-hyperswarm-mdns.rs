@@ -1,7 +1,7 @@
 use async_std::stream::StreamExt;
 use async_std::task;
 use colmeia_dat1_core::{parse, DatUrlResolution};
-use colmeia_hyperswarm_mdns::Locator;
+use colmeia_hyperswarm_mdns::{self_id, Locator};
 use std::time::Duration;
 
 // 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5
@@ -17,8 +17,9 @@ fn main() {
                 .expect("could not parse data");
 
         if let DatUrlResolution::HashUrl(hash) = parse_result {
-            let mut locator = Locator::new(hash.discovery_key(), Duration::from_secs(10))
-                .expect("could not initiate our locator");
+            let mut locator =
+                Locator::new(hash.discovery_key(), self_id(), Duration::from_secs(10))
+                    .expect("could not initiate our locator");
 
             while let Some(response) = locator.next().await {
                 println!("Peer found: {:?}", response);
