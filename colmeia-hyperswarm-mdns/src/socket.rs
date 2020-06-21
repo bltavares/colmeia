@@ -1,12 +1,12 @@
 use socket2::{Domain, Protocol, Socket, Type};
 use std::io;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
+use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::Duration;
 
 const IPV4_MULTICAST: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 251);
 lazy_static::lazy_static! {
-  pub static ref MULTICAST_DESTINATION: SocketAddr = SocketAddr::new(IpAddr::V4(IPV4_MULTICAST), 5353);
-  static ref DAT_MULTICAST: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 5353);
+  pub static ref MULTICAST_DESTINATION: SocketAddr = SocketAddr::new(IPV4_MULTICAST.into(), 5353);
+  static ref DAT_MULTICAST: SocketAddr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 5353);
 }
 
 /// On Windows, unlike all Unix variants, it is improper to bind to the multicast address
@@ -14,7 +14,7 @@ lazy_static::lazy_static! {
 /// see https://msdn.microsoft.com/en-us/library/windows/desktop/ms737550(v=vs.85).aspx
 #[cfg(windows)]
 fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
-    let addr = SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), addr.port());
+    let addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), addr.port());
     socket.bind(&socket2::SockAddr::from(addr))
 }
 
