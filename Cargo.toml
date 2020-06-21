@@ -11,6 +11,7 @@ members = [
     'colmeia-dat1-core',
     'colmeia-dat1',
     'colmeia-dat1-ffi',
+    'colmeia-hyperswarm-mdns',
 ]
 
 [dependencies]
@@ -19,18 +20,21 @@ env_logger = '*'
 hex = '*'
 anyhow = '*'
 
+[dependencies.async-std]
+version = '1.6.0'
+features = ['unstable']
+
 [dependencies.colmeia-dat1-mdns]
 path = 'colmeia-dat1-mdns'
 
 [dependencies.colmeia-dat1-proto]
 path = 'colmeia-dat1-proto'
 
-[dependencies.async-std]
-version = '1.6.0'
-features = ['unstable']
-
 [dependencies.colmeia-dat1-core]
 path = 'colmeia-dat1-core'
 
 [dependencies.colmeia-dat1]
 path = 'colmeia-dat1'
+
+[dependencies.colmeia-hyperswarm-mdns]
+path = 'colmeia-hyperswarm-mdns'
