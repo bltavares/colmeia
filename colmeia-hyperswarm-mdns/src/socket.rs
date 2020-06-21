@@ -14,6 +14,9 @@ lazy_static::lazy_static! {
 /// see https://msdn.microsoft.com/en-us/library/windows/desktop/ms737550(v=vs.85).aspx
 #[cfg(windows)]
 fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
+    // TODO Likelly a source of problems for computers with multiple interfaces on windows
+    // I had way to many problems already with windows selecting the WSL interface to broadcast
+    // instead of the wired interface to talk to my other server on the "real" LAN
     let addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), addr.port());
     socket.bind(&socket2::SockAddr::from(addr))
 }
