@@ -5,7 +5,6 @@ use async_std::task;
 use futures::{stream, Stream};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::pin::Pin;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use trust_dns_proto::op::{Message, MessageType, Query};
@@ -47,7 +46,7 @@ async fn wait_response(socket: &AsyncUdpSocket) -> anyhow::Result<(Vec<u8>, Ipv4
 
     if let SocketAddr::V4(origin_ip) = origin_ip {
         let packet_data: Vec<_> = buffer.iter().take(read_size).cloned().collect();
-        return Ok((packet_data, origin_ip.ip().clone()));
+        return Ok((packet_data, *origin_ip.ip()));
     }
 
     Err(anyhow::anyhow!(
@@ -57,25 +56,27 @@ async fn wait_response(socket: &AsyncUdpSocket) -> anyhow::Result<(Vec<u8>, Ipv4
 }
 
 pub struct Locator {
-    broadcast_stream: Pin<Box<dyn Stream<Item = ()>>>,
-    response_stream: Pin<Box<dyn Stream<Item = SocketAddr>>>,
+    broadcast_stream: Pin<Box<dyn Stream<Item = ()> + Send>>,
+    response_stream: Pin<Box<dyn Stream<Item = SocketAddr> + Send>>,
 }
 
 impl Locator {
     pub fn new(
+        socket: std::net::UdpSocket,
         hash: &[u8],
-        self_id: crate::OwnedSelfId,
         announcement_window: Duration,
     ) -> anyhow::Result<Self> {
-        let hyperswarm_domain = crate::hash_to_domain(hash);
-        log::debug!("hyperswarm domain: {:?}", hyperswarm_domain);
+        Locator::with_identifier(socket, hash, crate::self_id(), announcement_window)
+    }
 
-        let hyperswarm_domain = Name::from_str(&hyperswarm_domain)
-            .context("could not create hyperswarm dns name from provided hash")?;
-
-        let socket = crate::socket::create_shared().context("could not allocate a new socket")?;
-        log::debug!("allocated socket {:?}", socket);
-
+    pub fn with_identifier(
+        socket: std::net::UdpSocket,
+        hash: &[u8],
+        self_id: String,
+        announcement_window: Duration,
+    ) -> anyhow::Result<Self> {
+        let self_id: crate::OwnedSelfId = [self_id.into_bytes().into_boxed_slice()];
+        let hyperswarm_domain = crate::hash_as_domain_name(hash)?;
         let socket = Arc::from(AsyncUdpSocket::from(socket));
 
         let broadcast_stream = stream::unfold(
@@ -93,7 +94,7 @@ impl Locator {
         )
         .throttle(announcement_window);
 
-        let response_stream = stream::unfold(socket, |socket| async move {
+        let response_stream = stream::unfold(socket, |socket| async {
             let response = wait_response(&socket).await;
             Some((response, socket))
         })
@@ -109,10 +110,6 @@ impl Locator {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref UNSPECIFIED_NAME: Name = Name::from_str("0.0.0.0").unwrap();
-}
-
 fn select_ip_from_hyperswarm_mdns_response(
     packet: Vec<u8>,
     origin_ip: Ipv4Addr,
@@ -125,22 +122,19 @@ fn select_ip_from_hyperswarm_mdns_response(
     }
 
     let answers = dns_message.answers();
-    let id_different_from_self = answers.iter().find(|record| {
+    let _id_different_from_self = answers.iter().find(|record| {
         if let RData::TXT(txt_data) = record.rdata() {
             return txt_data.txt_data() != self_id;
         }
         false
-    });
-    if let Some(_) = id_different_from_self {
-        return None;
-    }
+    })?;
 
     let srv_matches = answers
         .iter()
         .find(|record| record.name() == hyperswarm_domain)?;
     if let RData::SRV(srv_data) = srv_matches.rdata() {
         let port = srv_data.port();
-        if srv_data.target() == &*UNSPECIFIED_NAME {
+        if srv_data.target() == &*crate::UNSPECIFIED_NAME {
             return Some(SocketAddr::new(IpAddr::V4(origin_ip), port));
         } else {
             let target_ipv4 = srv_data.target().to_utf8().parse::<Ipv4Addr>().ok()?;
@@ -158,7 +152,7 @@ impl futures::Stream for Locator {
     ) -> task::Poll<Option<Self::Item>> {
         use futures::stream::StreamExt;
 
-        drop(self.broadcast_stream.poll_next_unpin(cx));
+        let _ = self.broadcast_stream.poll_next_unpin(cx);
         self.response_stream.poll_next_unpin(cx)
     }
 }

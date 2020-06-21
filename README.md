@@ -128,6 +128,12 @@ RUST_LOG=debug cargo run --bin colmeia-clone -- 192.168.15.173:3282 dat://6268b9
 DEBUG="dat*" npx dat share
 ```
 
+### hyperswarm mdns discovery process
+
+```sh
+cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 8000
+```
+
 ## Platforms
 
 ### Android Direct compilation
@@ -238,4 +244,3 @@ Run and `scp` the binaries on `target/mips-unknown-linux-musl`:
 ```sh
  cross build --target mips-unknown-linux-musl
  ```
- 
