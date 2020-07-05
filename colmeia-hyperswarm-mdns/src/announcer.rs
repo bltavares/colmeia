@@ -1,18 +1,16 @@
 use anyhow::Context;
-use async_std::net::UdpSocket as AsyncUdpSocket;
-use async_std::stream::StreamExt;
-use async_std::task;
-use futures::stream;
-use futures::Stream;
-use std::net::{Ipv4Addr, SocketAddr};
-use std::pin::Pin;
-use std::sync::Arc;
+use async_std::{stream::StreamExt, task};
+use futures::{stream, stream::StreamExt as FStreamExt, FutureExt, Stream};
 use trust_dns_proto::op::{Message, MessageType};
 use trust_dns_proto::rr::{
     rdata::{SRV, TXT},
     Name, RData, Record, RecordType,
 };
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
+
+use std::io;
+use std::sync::Arc;
+use std::{net::Ipv4Addr, pin::Pin};
 
 pub fn packet(
     hyperswarm_domain: Name,
@@ -50,37 +48,28 @@ pub fn packet(
 
 async fn respond(
     hyperswarm_domain: Name,
-    socket: &AsyncUdpSocket,
+    interface: multicast_socket::Interface,
+    socket: Arc<multicast_socket::MulticastSocket>,
     port: u16,
     self_identifier: String,
 ) -> anyhow::Result<()> {
     let mdns_packet_bytes = packet(hyperswarm_domain, port, self_identifier)?;
 
-    socket
-        .send_to(&mdns_packet_bytes, *crate::socket::MULTICAST_DESTINATION)
+    task::spawn(async move { socket.send(&mdns_packet_bytes, &interface) })
         .await
         .context("Could not send bytes")?;
 
     Ok(())
 }
 
-async fn wait_broadcast(socket: &AsyncUdpSocket) -> anyhow::Result<(Vec<u8>, Ipv4Addr)> {
-    let mut buffer = [0; 512];
-    let (read_size, origin_ip) = socket.recv_from(&mut buffer).await?;
-
-    if let SocketAddr::V4(origin_ip) = origin_ip {
-        let packet_data: Vec<_> = buffer.iter().take(read_size).cloned().collect();
-        return Ok((packet_data, *origin_ip.ip()));
-    }
-
-    Err(anyhow::anyhow!(
-        "packet response is not ipv4, {:?}",
-        origin_ip
-    ))
+async fn wait_broadcast(
+    socket: Arc<multicast_socket::MulticastSocket>,
+) -> io::Result<multicast_socket::Message> {
+    task::spawn(async move { socket.receive() }).await
 }
 
-fn is_same_hash_questions(packet: Vec<u8>, hyperswarm_domain: &Name) -> Option<Message> {
-    let dns_message = Message::from_vec(&packet).ok()?;
+fn is_same_hash_questions(packet: &[u8], hyperswarm_domain: &Name) -> Option<Message> {
+    let dns_message = Message::from_vec(packet).ok()?;
     if dns_message.query_count() != 1 {
         return None;
     }
@@ -97,57 +86,70 @@ fn is_same_hash_questions(packet: Vec<u8>, hyperswarm_domain: &Name) -> Option<M
     Some(dns_message)
 }
 
+type ListenContext = (
+    multicast_socket::Message,
+    Arc<multicast_socket::MulticastSocket>,
+);
+
 pub struct Announcer {
     stream: Pin<Box<dyn Stream<Item = Ipv4Addr> + Send>>,
 }
 
 impl Announcer {
-    pub fn new(socket: std::net::UdpSocket, hash: &[u8], port: u16) -> anyhow::Result<Self> {
+    pub fn new(
+        socket: multicast_socket::MulticastSocket,
+        hash: &[u8],
+        port: u16,
+    ) -> anyhow::Result<Self> {
         Announcer::with_identifier(socket, hash, port, crate::self_id())
     }
 
     pub fn with_identifier(
-        socket: std::net::UdpSocket,
+        socket: multicast_socket::MulticastSocket,
         hash: &[u8],
         port: u16,
         self_identifier: String,
     ) -> anyhow::Result<Self> {
-        let hyperswarm_domain = crate::hash_as_domain_name(hash)?;
-        let socket = Arc::from(AsyncUdpSocket::from(socket));
-        let response_stream = stream::unfold(
-            (
-                socket.clone(),
-                hyperswarm_domain.clone(),
-                port,
-                self_identifier,
-            ),
-            |(socket, hyperswarm_domain, port, self_identifier)| async move {
+        let hyperswarm_domain = Arc::from(crate::hash_as_domain_name(hash)?);
+        let socket = Arc::from(socket);
+
+        let listener = stream::unfold(socket, |socket| async {
+            let response = wait_broadcast(socket.clone()).await;
+            Some((response.map(|msg| (msg, socket.clone())), socket))
+        });
+
+        let listen_stream = StreamExt::filter_map(listener, |i| i.ok());
+
+        let select_packets_fn = {
+            let name = hyperswarm_domain.clone();
+            move |(message, _): &ListenContext| {
+                is_same_hash_questions(&message.data, &name).is_some()
+            }
+        };
+        let listen_stream = StreamExt::filter(listen_stream, select_packets_fn);
+
+        let response_fn = {
+            let name = hyperswarm_domain.clone();
+            move |(message, socket): ListenContext| {
                 let result = respond(
-                    hyperswarm_domain.clone(),
-                    &socket,
+                    (*name).clone(),
+                    message.interface,
+                    socket,
                     port,
                     self_identifier.clone(),
-                )
-                .await;
-
-                if let Err(e) = result {
-                    log::warn!("Could not respond to query {:?}", e);
-                }
-
-                Some(((), (socket, hyperswarm_domain, port, self_identifier)))
-            },
-        );
-
-        let listen_stream = stream::unfold(socket, |socket| async {
-            let response = wait_broadcast(&socket).await;
-            Some((response, socket))
-        })
-        .filter_map(|item| item.ok()) // TODO filter if item is a good packet
-        .filter_map(move |(packet, origin_ip)| {
-            is_same_hash_questions(packet, &hyperswarm_domain).map(|_| origin_ip)
-        })
-        .zip(response_stream)
-        .map(|(origin_ip, _)| origin_ip);
+                );
+                let origin_address = message.origin_address;
+                result.map(move |i| (i, origin_address))
+            }
+        };
+        let listen_stream = StreamExt::map(listen_stream, response_fn);
+        let listen_stream = FStreamExt::then(listen_stream, |result| async {
+            let (result, origin_address) = result.await;
+            if let Err(e) = result {
+                log::warn!("Could not send response back {}", e);
+            }
+            *origin_address.ip()
+        });
 
         Ok(Announcer {
             stream: Box::pin(listen_stream),

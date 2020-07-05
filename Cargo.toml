@@ -6,7 +6,7 @@ edition = '2018'
 
 [workspace]
 members = [
-    'colmeia-dat1-mdns',
+    # 'colmeia-dat1-mdns',
     'colmeia-dat1-proto',
     'colmeia-dat1-core',
     'colmeia-dat1',
@@ -24,8 +24,8 @@ anyhow = '*'
 version = '1.6.0'
 features = ['unstable']
 
-[dependencies.colmeia-dat1-mdns]
-path = 'colmeia-dat1-mdns'
+# [dependencies.colmeia-dat1-mdns]
+# path = 'colmeia-dat1-mdns'
 
 [dependencies.colmeia-dat1-proto]
 path = 'colmeia-dat1-proto'
