@@ -804,7 +804,7 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "libc"
 version = "0.2.71"
-source = "git+https://github.com/rust-lang/libc#77d522eeda2cbf0befe2c080d0a022c1c2a2e338"
+source = "git+https://github.com/rust-lang/libc#0c2027f05a3a4053b37a72f88a9da2af02d30621"
 
 [[package]]
 name = "libc"
@@ -902,7 +902,7 @@ checksum = "864e1de64c29b386d2dc7822aea156a7e4d45d4393ac748878dc21c9c41037f0"
 [[package]]
 name = "multicast-socket"
 version = "0.1.0"
-source = "git+https://github.com/bltavares/multicast-socket.git#4f1a75a4a40ad98d7a743e079349c7e6fceceb18"
+source = "git+https://github.com/bltavares/multicast-socket.git#89065dd3c919c2d636d2348c9f84573e77127fc4"
 dependencies = [
  "get_if_addrs",
  "libc 0.2.71 (git+https://github.com/rust-lang/libc)",
