@@ -72,7 +72,7 @@ impl MdnsDiscovery {
     }
 
     pub fn with_locator(&mut self, duration: Duration) -> &mut Self {
-        self.locate = crate::socket::create_shared()
+        self.locate = crate::socket::create()
             .map_err(anyhow::Error::from)
             .and_then(|socket| {
                 locator::Locator::with_identifier(
@@ -88,7 +88,7 @@ impl MdnsDiscovery {
     }
 
     pub fn with_announcer(&mut self, port: u16) -> &mut Self {
-        self.announce = crate::socket::create_shared()
+        self.announce = crate::socket::create()
             .map_err(anyhow::Error::from)
             .and_then(|socket| {
                 announcer::Announcer::with_identifier(
