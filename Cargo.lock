@@ -110,9 +110,9 @@ checksum = "c17772156ef2829aadc587461c7753af20b7e8db1529bc66855add962a3b35d3"
 
 [[package]]
 name = "async-trait"
-version = "0.1.31"
+version = "0.1.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26c4f3195085c36ea8d24d32b2f828d23296a9370a28aa39d111f6f16bef9f3b"
+checksum = "a265e3abeffdce30b2e26b7a11b222fe37c6067404001b434101457d0385eb92"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -156,6 +156,16 @@ checksum = "5d6575f128516de27e3ce99689419835fce9643a9b215a14d2b5b685be018491"
 dependencies = [
  "cc",
  "libc 0.2.71 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "bitfield-rle"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f8acc105b7bd3ed61e4bb7ad3e3b3f2a8da72205b2e0408cf71a499e8f57dd0"
+dependencies = [
+ "failure",
+ "varinteger",
 ]
 
 [[package]]
@@ -334,12 +344,28 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
+ "colmeia-hypercore",
  "colmeia-hypercore-utils",
  "colmeia-hyperswarm-mdns",
  "env_logger",
  "futures",
  "hex",
  "hypercore-protocol",
+]
+
+[[package]]
+name = "colmeia-hypercore"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "ed25519-dalek",
+ "futures",
+ "hypercore",
+ "hypercore-protocol",
+ "log",
+ "random-access-memory",
+ "random-access-storage",
 ]
 
 [[package]]
@@ -522,6 +548,12 @@ name = "fixedbitset"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
+
+[[package]]
+name = "flat-tree"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f55d280d4b6d9585f3d1458eb082fb30f541ad227b2102965e4c7aa239a5e9e4"
 
 [[package]]
 name = "fuchsia-zircon"
@@ -758,6 +790,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypercore"
+version = "0.11.1-beta.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "660169877882e0f700c10f52d62815a4660cbf144b9a909d0e13833c7b4fd9a0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "bitfield-rle",
+ "blake2-rfc",
+ "byteorder",
+ "ed25519-dalek",
+ "flat-tree",
+ "futures",
+ "lazy_static",
+ "memory-pager",
+ "merkle-tree-stream",
+ "pretty-hash",
+ "rand",
+ "random-access-disk",
+ "random-access-memory",
+ "random-access-storage",
+ "sha2 0.8.2",
+ "sleep-parser",
+ "sparse-bitfield",
+ "tree-index",
+]
+
+[[package]]
 name = "hypercore-protocol"
 version = "0.0.1"
 source = "git+https://github.com/Frando/hypercore-protocol-rs.git#9a3ad0e17364a2ed3d5801e8e90153e214a4b64d"
@@ -891,6 +951,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 
 [[package]]
+name = "memory-pager"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad05e53b413682ea2aa20b027babc7316d5c637f5f52cff4b042f825fb76f9bb"
+
+[[package]]
+name = "merkle-tree-stream"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97c0d20e0a20306809c742af7cc5c0da05ac742580ec88d804cbfa509d9bbaf7"
+dependencies = [
+ "flat-tree",
+]
+
+[[package]]
 name = "mio"
 version = "0.6.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -920,6 +995,12 @@ dependencies = [
  "winapi 0.2.8",
  "ws2_32-sys",
 ]
+
+[[package]]
+name = "mkdirp"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "864e1de64c29b386d2dc7822aea156a7e4d45d4393ac748878dc21c9c41037f0"
 
 [[package]]
 name = "multicast-socket"
@@ -1229,6 +1310,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "random-access-disk"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "246bbdb354ccec46547e33d113411e95dfe28af66c32ab6b38ce897fc8816a42"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "async-trait",
+ "mkdirp",
+ "random-access-storage",
+]
+
+[[package]]
+name = "random-access-memory"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9194febd5cecca959b411f5f397269dcc0a7928ffbeb85c33d16d70b8a5d8107"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures",
+ "random-access-storage",
+]
+
+[[package]]
+name = "random-access-storage"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d27bac8187e6f11f361c36af0ff2ee11a9aecad55b64c5e48470f28fdb3feac"
+dependencies = [
+ "async-trait",
+ "futures-io",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1350,6 +1466,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
+name = "sleep-parser"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b77744f73b2cee34255eccbac43289b960e412d926477d73375fe52a016fa774"
+dependencies = [
+ "byteorder",
+ "failure",
+]
+
+[[package]]
 name = "smallvec"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1403,6 +1529,15 @@ dependencies = [
  "libc 0.2.71 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_syscall",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "sparse-bitfield"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f98e2a9d642ccbbd1b67dff822a7d3115f18f133bf840ca3e551567eabdee074"
+dependencies = [
+ "memory-pager",
 ]
 
 [[package]]
@@ -1516,6 +1651,16 @@ dependencies = [
  "mio",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "tree-index"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8cccd9e5400719d4676d810725f4a48e6923fcedb670adba39cfb4fde7d01a3"
+dependencies = [
+ "flat-tree",
+ "sparse-bitfield",
 ]
 
 [[package]]
