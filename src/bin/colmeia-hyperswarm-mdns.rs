@@ -1,5 +1,5 @@
 use async_std::{prelude::StreamExt, task};
-use colmeia_dat1_core::{parse, DatUrlResolution};
+use colmeia_hypercore_utils::{parse, UrlResolution};
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
 use std::env;
 use std::time::Duration;
@@ -29,7 +29,7 @@ fn main() {
 
     let parse_result = parse(&hyper_hash).expect("could not parse data");
 
-    if let DatUrlResolution::HashUrl(hash) = parse_result {
+    if let UrlResolution::HashUrl(hash) = parse_result {
         task::block_on(async move {
             let mut mdns = MdnsDiscovery::new(hash.discovery_key().to_vec());
             mdns.with_announcer(port)

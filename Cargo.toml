@@ -6,12 +6,8 @@ edition = '2018'
 
 [workspace]
 members = [
-    # 'colmeia-dat1-mdns',
-    'colmeia-dat1-proto',
-    'colmeia-dat1-core',
-    'colmeia-dat1',
-    'colmeia-dat1-ffi',
     'colmeia-hyperswarm-mdns',
+    'colmeia-hypercore-utils',
 ]
 
 [dependencies]
@@ -21,20 +17,14 @@ hex = '*'
 anyhow = '*'
 
 [dependencies.async-std]
-version = '1.6.0'
+version = '1.6.2'
 features = ['unstable']
 
-# [dependencies.colmeia-dat1-mdns]
-# path = 'colmeia-dat1-mdns'
-
-[dependencies.colmeia-dat1-proto]
-path = 'colmeia-dat1-proto'
-
-[dependencies.colmeia-dat1-core]
-path = 'colmeia-dat1-core'
-
-[dependencies.colmeia-dat1]
-path = 'colmeia-dat1'
+[dependencies.hypercore-protocol]
+git = 'https://github.com/Frando/hypercore-protocol-rs.git'
 
 [dependencies.colmeia-hyperswarm-mdns]
 path = 'colmeia-hyperswarm-mdns'
+
+[dependencies.colmeia-hypercore-utils]
+path = 'colmeia-hypercore-utils'
