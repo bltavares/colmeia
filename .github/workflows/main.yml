@@ -22,8 +22,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: rustfmt
-          # components: rustfmt, clippy
+          components: rustfmt, clippy
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
@@ -31,9 +30,8 @@ jobs:
           command: fmt
           args: --all -- --check
 
-      # TODO enable clippy when unsafe calls are fixed
-      # - name: Run cargo clippy
-      #   run: cargo clippy -- -D warnings
+      - name: Run cargo clippy
+        run: cargo clippy --workspace -- -D clippy::pedantic
 
   check:
     name: Check
@@ -56,7 +54,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --bins
+          args: --bins --workspace
 
   test:
     name: Test Suite
@@ -79,4 +77,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --bins
+          args: --bins --workspace

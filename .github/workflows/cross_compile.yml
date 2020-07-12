@@ -28,7 +28,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target=${{ matrix.target }} --bins
+          args: --target=${{ matrix.target }} --bins --workspace
 
   ios:
     name: iOS Build
@@ -49,4 +49,4 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target=${{ matrix.target }} --bins
+          args: --target=${{ matrix.target }} --bins --workspace
