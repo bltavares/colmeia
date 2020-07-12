@@ -7,7 +7,6 @@
     <img src="https://img.shields.io/github/workflow/status/bltavares/colmeia/Cross-compile/master?label=cross%20ci" />
 </a>
 
-
 ----
 Hive (in portuguese). Attempt to make an interop layer to connect to [dat](https://github.com/datrs/) on [hyperswarm](https://github.com/hyperswarm) and legacy infra as well. Vaporware and might never be finished. Contributions welcome.
 
