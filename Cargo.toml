@@ -24,6 +24,9 @@ anyhow = '*'
 version = '1.6.0'
 features = ['unstable']
 
+[dependencies.hypercore-protocol]
+git = 'https://github.com/Frando/hypercore-protocol-rs.git'
+
 # [dependencies.colmeia-dat1-mdns]
 # path = 'colmeia-dat1-mdns'
 
