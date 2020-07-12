@@ -1,12 +1,18 @@
 use anyhow::Context;
+use async_std::{future::IntoFuture, stream::IntoStream, task};
 use ed25519_dalek::PublicKey;
-use futures::io::{AsyncRead, AsyncWrite};
-use hypercore_protocol as proto;
+use futures::{
+    io::{AsyncRead, AsyncWrite},
+    StreamExt,
+};
 use std::{
+    collections::HashMap,
     io,
     pin::Pin,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex, RwLock},
 };
+
+use hypercore_protocol as proto;
 
 mod network;
 mod observer;
@@ -61,61 +67,74 @@ pub async fn in_memmory(
         metadata: Arc::new(RwLock::new(metadata)),
     })
 }
+#[derive(Debug)]
+pub enum Item {
+    Event(proto::Event),
+    Message(proto::Message),
+}
 
 pub struct HypercoreService {
-    stream: Pin<Box<dyn futures::stream::Stream<Item = proto::Message>>>,
+    stream: Pin<Box<dyn futures::Stream<Item = Item>>>,
 }
 
 impl HypercoreService {
-    pub fn new<C>(
-        client: proto::Protocol<C, C>,
-        observer: impl ChannelObserver<Err = Box<dyn std::error::Error + Send + Sync>> + 'static + Send,
-    ) -> Self
+    pub fn stream<C>(client: proto::Protocol<C, C>) -> Self
     where
         C: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
     {
-        use futures::StreamExt;
+        let queue = Arc::new(async_std::sync::RwLock::new(
+            futures::stream::FuturesUnordered::new(),
+        ));
 
-        let channel_stream = futures::stream::unfold(client, |mut client| async {
-            let event = client.loop_next().await;
-            match event {
-                Ok(proto::Event::Channel(channel)) => {
-                    return Some((Some(channel), client));
+        let rw_queue = queue.clone();
+
+        let event_loop =
+            futures::stream::unfold((client, rw_queue), |(mut client, rw_queue)| async {
+                match client.loop_next().await {
+                    Ok(event) => {
+                        dbg!(&event);
+                        let event = match dbg!(event) {
+                            proto::Event::Channel(channel) => {
+                                rw_queue.read().await.push(channel.into_future());
+                                None
+                            }
+                            event => Some(event),
+                        };
+                        Some((event, (client, rw_queue)))
+                    }
+                    Err(_) => None,
                 }
-                Ok(_) => Some((None, client)),
-                Err(_) => None,
+            })
+            .filter_map(|i| async { i })
+            .map(Item::Event);
+
+        let channel_loop = futures::stream::unfold(queue, |queue| async move {
+            let result = queue.write().await.next().await;
+            if let Some((Some(message), stream)) = result {
+                queue.read().await.push(stream.into_future());
+                Some((Some(message), queue))
+            } else {
+                Some((None, queue))
             }
         })
-        .filter_map(|i| async move { i });
+        .filter_map(|i| async { i })
+        .map(Item::Message);
 
-        let message_stream =
-            channel_stream.flat_map(|channel| channel.map(|message| (channel, message)));
+        // TODO why does merge does not work?!
+        let stream = async_std::stream::StreamExt::merge(channel_loop, event_loop);
 
-        let stream = message_stream.filter_map(|(channel, message)| async move {
-            dbg!(&message);
-            match message {
-                proto::Message::Open(open) => observer
-                    .on_open(&mut channel, &open)
-                    .await
-                    .expect("could not open"),
-                _ => {}
-            };
-            Some(message)
-        });
-
-        Self {
+        HypercoreService {
             stream: Box::pin(stream),
         }
     }
 }
 
-impl futures::stream::Stream for HypercoreService {
-    type Item = proto::Message;
+impl futures::Stream for HypercoreService {
+    type Item = Item;
     fn poll_next(
-        mut self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Option<Self::Item>> {
-        use futures::stream::StreamExt;
+        mut self: Pin<&mut Self>,
+        cx: &mut task::Context<'_>,
+    ) -> task::Poll<Option<Self::Item>> {
         self.stream.poll_next_unpin(cx)
     }
 }

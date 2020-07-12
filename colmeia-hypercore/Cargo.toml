@@ -14,5 +14,9 @@ random-access-memory = '2.0.0'
 async-trait = '0.1.36'
 log = '0.4.8'
 
+[dependencies.async-std]
+version = '1.6.2'
+features = ['unstable']
+
 [dependencies.hypercore-protocol]
 git = 'https://github.com/Frando/hypercore-protocol-rs'
