@@ -1,4 +1,5 @@
 use async_std::net::TcpStream;
+use colmeia_hypercore_utils::{parse, UrlResolution};
 use hypercore_protocol as proto;
 use std::net::SocketAddr;
 
@@ -22,9 +23,9 @@ fn main() {
 
     let key = name();
     let address = address();
-    let dat_key = colmeia_dat1_core::parse(&key).expect("invalid dat argument");
+    let dat_key = parse(&key).expect("invalid dat argument");
     let dat_key = match dat_key {
-        colmeia_dat1_core::DatUrlResolution::HashUrl(result) => result,
+        UrlResolution::HashUrl(result) => result,
         _ => panic!("invalid hash key"),
     };
     async_std::task::block_on(async {

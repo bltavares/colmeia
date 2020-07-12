@@ -1,0 +1,11 @@
+[package]
+name = 'colmeia-hypercore-utils'
+version = '0.1.0'
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
+edition = '2018'
+
+[dependencies]
+hex = '0.4.2'
+ed25519-dalek = '1.0.0-pre.3'
+blake2-rfc = '0.2.18'
+parse-dat-url = '0.1.0'

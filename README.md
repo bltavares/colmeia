@@ -1,5 +1,13 @@
 # colmeia
 
+<a href="https://github.com/bltavares/colmeia/actions?query=workflow%3AQuickstart+branch%3Amaster">
+    <img src="https://img.shields.io/github/workflow/status/bltavares/colmeia/Quickstart/master?label=main%20ci" />
+</a>
+<a href="https://github.com/bltavares/colmeia/actions?query=workflow%3ACross-compile+branch%3Amaster">
+    <img src="https://img.shields.io/github/workflow/status/bltavares/colmeia/Cross-compile/master?label=cross%20ci" />
+</a>
+
+
 ----
 Hive (in portuguese). Attempt to make an interop layer to connect to [dat](https://github.com/datrs/) on [hyperswarm](https://github.com/hyperswarm) and legacy infra as well. Vaporware and might never be finished. Contributions welcome.
 
@@ -12,100 +20,65 @@ Write a pure rust network stack compatible with dat, to be able to run it on des
 - [x] Generate a binary that finds and talk to a LAN `dat` node: handshake and disconnect
 - [x] Compile to Android
 - [ ] **next** Create a connection pool that tracks dat peers, and track hypercore version to allow crossing bridges
-- [ ] Bundle the static library into a Flutter app (**validated as viable already**) that displays the connection pool of dat peers for a given dat url (needs work)
-- [ ] *(stretch goal)* **validated as viable already**  Write a Flutter app (micro-app as in a  micro-service) that syncs and share files, allowing to build other local-first apps without needing to bundle the network stack logic (like [dat-desktop](https://github.com/dat-land/dat-desktop) but for mobile and desktop without Node)
+- [ ] Bundle the static library into a Flutter app (**validated as viable already with dat (legacy)**) that displays the connection pool of dat peers for a given dat url (needs work)
+- [x] **(strech goal)** Support routers (MIPS)
+- [ ] *(stretch goal)* **validated as viable already with dat (legacy)**  Write a Flutter app (micro-app as in a  micro-service) that syncs and share files, allowing to build other local-first apps without needing to bundle the network stack logic (like [dat-desktop](https://github.com/dat-land/dat-desktop) but for mobile and desktop without Node)
 - [ ] *(stretch-er goal)* WASM and websocket integration
-- [ ] *(stretch-er goal)* **validated as viable already** FFI bindings to be able to link into an iOS app and other languages ([neon](https://neon-bindings.com/)?/[helix](https://usehelix.com/)?/[dart ffi](https://users.rust-lang.org/t/ffi-support-in-dart/32375)?).
-
+- [ ] *(stretch-er goal)* **validated as viable already with dat (legacy)** FFI bindings to be able to link into an iOS app and other languages ([neon](https://neon-bindings.com/)?/[helix](https://usehelix.com/)?/[dart ffi](https://users.rust-lang.org/t/ffi-support-in-dart/32375)?).
 
 ## References
 
-### [dat 1](https://github.com/datproject/dat/tree/v13.13.1) compatibility
+### [hyperswarm](https://github.com/hyperswarm) & [hypercore-protocol](https://hypercore-protocol.org/) compatibility
 
-Modules:
+Uses NOISE protocol and a different handshake.
 
-- [x] `colmeia-dat1-mdns`: based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
+#### Modules
+
+#### Discovery
+
+- [x] `colmeia-hyperswarm-mdns`: Support to hyperswarm mdns infrastructure: based on [hyperswarm/discovery](https://github.com/hyperswarm/discovery/)
   - [x] `Locator`: stream to find dat members in the network
   - [x] `Announcer`: stream that announces a dat in the network
   - [x] `Mdns`: announces and find dat in the network
-- [x] `colmeia-dat1-proto`: Parses DAT v1 wire protocol
-  - [x] Handshake
-  - [x] Read Encrypted
-  - [x] Write Encrypted
-  - [x] Add more methods and service handler
-- [ ] **wip** `colmeia-dat1`
-  - [x] Clone metadata into a hypercore feed
-  - [x] Hypercore and Hyperfeed impl
-  - [x] Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/mafintosh/hyperdrive/blob/v9/index.js#L893-L896))
-  - [x] Create a `Dat` struct that discovers and creates peeredfeed interactions
+- [ ] `colmeia-dht`: Interop with hypwerswarm dht infrastructure (:eyes: <https://github.com/mattsse/hyperswarm-dht>)
+
+#### Protocol
+
+- [ ] **wip** `colmeia-hypercore**: Networked module for hypercore storage
+  - [ ] Clone metadata into a hypercore feed
+  - [ ] Hypercore and Hyperfeed impl
+  - [ ] Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/hypercore-protocol/hyperdrive/blob/v10.13.0/index.js#L186))
+  - [ ] Create a `Hypercore` struct that discovers and creates peeredfeed interactions
   - [ ] Write to disk
   - [ ] Impl remaining replicate logic
-- [ ] `colmeia-dat1-dns` ?: DNS discovery based on [dns-discovery](https://github.com/mafintosh/dns-discovery)
-- [ ] `colmeia-dat1-utp` ?: BitTorrent discover based on [discovery-channel](https://github.com/maxogden/discovery-channel)
 
-Versions for reference:
-
-- [dat 13.13.1](https://github.com/datproject/dat/tree/v13.13.1)
-- [dat-node 3.5.15](https://github.com/datproject/dat-node/tree/v3.5.15)
-- [discovery-swarm 5.1.4](https://github.com/mafintosh/discovery-swarm/tree/v5.1.4)
-- [discovery-channel 5.5.1](https://github.com/maxogden/discovery-channel/tree/v5.5.1)
-- [dns-discovery 6.2.3](https://github.com/mafintosh/dns-discovery/tree/v6.2.3)
-- [hypercore-protocol 6.9.0](https://github.com/mafintosh/hypercore-protocol/tree/v6.9.0)
-- [hypercore 7.7.1](https://github.com/mafintosh/hypercore/tree/v7.7.1)
-- [hyperdrive 9.14.5](https://github.com/mafintosh/hyperdrive/tree/v9.14.5)
-- [How dat works](https://datprotocol.github.io/how-dat-works/) website
-
-### [hyperswarm](https://github.com/hyperswarm) & dat 2 compatibility
-
-New protocol is in development. No stable release of either beaker or `dat` available yet.
-Uses NOISE protocol and a different handshake.
-
-Reference tools:
+#### Reference tools
 
 - [hyperdrive-daemon](https://github.com/andrewosh/hyperdrive-daemon)
 - [hyperdrive v10](https://github.com/mafintosh/hyperdrive)
 - [snow noise protocol](https://snow.rs/)
 - [hypercore-protocol-rust-experiments](https://github.com/Frando/hypercore-protocol-rust-experiments)
+- [hypercore-protocol-rs](https://github.com/Frando/hypercore-protocol-rs)
+- [Beaker Browser](https://beakerbrowser.com/)
 
-Modules:
+#### Versions for reference
 
-- [ ] `colmeia-dht`: Interop with hypwerswarm dht infrastructure
-- [ ] `colmeia-mdns`: Support to hypwerswarm mdns infrastructure
-- [ ] `colmeia-hypercore-proto`: Dat v2 wire protocol
+- [hypercore v10.13.0](https://github.com/hypercore-protocol/hyperdrive/blob/v10.13.0/index.js)
+- [hypercore-protocol spec](https://hypercore-protocol.org/)
+- **TDB**
 
-Versions for reference: **TDB**
+## CLI binaries
 
-### General
-
-- [ ] `colmeia-resolve`: converts a `.well-known/dat`  or DNS TXT [into a hash](https://beakerbrowser.com/docs/guides/use-a-domain-name-with-dat)
-- [ ] `colmeia-network`: Network connection pool manager, allowing to use other modules to fetch information
-
-## Relevant patches upstream
-
-- [ ] [Make merkle-treem-stream Send](https://github.com/datrs/merkle-tree-stream/pull/28)
-- [ ] [Make hypercore Send](https://github.com/datrs/hypercore/pull/95)
-- [ ] [Remove internal buffering on simple-message-channel to avoid bytes being dropped during handshake](https://github.com/datrs/simple-message-channels/pull/5)
-- Bumps to make `datrs/hypercore` compatible with `rand` and `-dalek` pre release (No patches yet)
-
-## Utils
-
-```
+```txt
 Local dat2: be41e3d43d054982e14dfc60281d9d4425ab5d4b0b280a355b7927869ca08fc5
 ```
 
-### Find a peer, download stuff
-
-```sh
-RUST_LOG="colmeia_dat1=debug" cargo run --bin colmeia-sync -- dat://642b2da5e4267635259152eb0b1c04416030a891acd65d6c942b8227b8cbabed
- ```
-
-
 ### Find a local peer
 
-[colmeia-mdns](./src/bin/colmeia-mdns.rs)
+[colmeia-mdns](./src/bin/colmeia-hyperswarm-mdns.rs)
 
 ```sh
-RUST_LOG=debug cargo run --bin colmeia-mdns -- dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
+RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 8000
 ```
 
 ### Connect and troubleshoot a peer
@@ -113,7 +86,7 @@ RUST_LOG=debug cargo run --bin colmeia-mdns -- dat://460f04cf12c3b9833e5a0d3dd8e
 [colmeia-nc](./src/bin/colmeia-nc.rs)
 
 ```sh
-RUST_LOG=debug cargo run --bin colmeia-nc -- 127.0.0.1:3282  dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
+RUST_LOG=debug cargo run --bin colmeia-nc -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 127.0.0.1:3282
 ```
 
 ### Clone from a single host
@@ -122,19 +95,9 @@ RUST_LOG=debug cargo run --bin colmeia-nc -- 127.0.0.1:3282  dat://460f04cf12c3b
 RUST_LOG=debug cargo run --bin colmeia-clone -- 192.168.15.173:3282 dat://6268b99fbacacea49c6bc3d4776b606db2aeadb3fa831342ba9f70d55c98929f
 ```
 
-### dat server debug mode
-
-```sh
-DEBUG="dat*" npx dat share
-```
-
-### hyperswarm mdns discovery process
-
-```sh
-cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 8000
-```
-
 ## Platforms
+
+:warning: **TODO**: redo support as part of dat -> hypercore migration
 
 ### Android Direct compilation
 
@@ -170,7 +133,7 @@ cross build --target armv7-linux-androideabi
 - To find the correct target for your device: `adb shell uname -m`
 
 | arch             | target                  |
-| ---------------- | ----------------------- |
+|------------------|-------------------------|
 | armv7l           | armv7-linux-androideabi |
 | aarch64 or arm64 | aarch64-linux-android   |
 | arm*             | arm-linux-androideabi   |
@@ -208,31 +171,6 @@ Open the app and copy the content to the home folder:
 cp /data/local/tmp/colmeia/colmeia-server ~
 
 RUST_LOG=debug ~/colmeia-server 0.0.0.0:8787 dat://460f04cf12c3b9833e5a0d3dd8eea05eab59dd8c1438a7454afe9630b9b4f8bd
-```
-
-### Flutter
-
-#### Android libs
-
-Only runs on Linux (or WSL2)
-
-```sh
-make android
-```
-
-#### iOS libs
-
-Only works on Mac.
-`Enable Bitcode = false`
-
-```sh
-# 64 bit targets (real device & simulator):
-rustup target add aarch64-apple-ios x86_64-apple-ios
-cargo install cargo-lipo
-```
-
-```sh
-make ios
 ```
 
 ### OpenWRT
