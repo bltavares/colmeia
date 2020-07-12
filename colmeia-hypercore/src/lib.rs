@@ -18,7 +18,6 @@ mod network;
 mod observer;
 
 pub use network::hyperdrive::PeeredHyperdrive;
-use observer::ChannelObserver;
 
 /// Returns a successfully handshaken stream
 pub async fn initiate<S>(public_key: &PublicKey, tcp_stream: S) -> io::Result<proto::Protocol<S, S>>

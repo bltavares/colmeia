@@ -1,5 +1,7 @@
 use super::hypercore::PeeredHypercore;
-use crate::{observer::ChannelObserver, Hyperdrive};
+use crate::{observer::EventObserver, Hyperdrive};
+
+use futures::io::{AsyncRead, AsyncWrite};
 use std::sync::{Arc, RwLock};
 
 pub struct PeeredHyperdrive<Storage>
@@ -53,12 +55,13 @@ where
     }
 }
 
-impl<Storage> ChannelObserver for PeeredHyperdrive<Storage>
+impl<Storage, S> EventObserver<S> for PeeredHyperdrive<Storage>
 where
     Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
         + std::fmt::Debug
         + Send
         + Sync,
+    S: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
 {
     type Err = Box<dyn std::error::Error + Send + Sync>;
 }

@@ -1,8 +1,11 @@
 use async_trait::async_trait;
-use hypercore_protocol as proto; // TODO macro?
+use futures::io::{AsyncRead, AsyncWrite};
+use hypercore_protocol as proto;
+
+// TODO macro?
 
 #[async_trait]
-pub trait ChannelObserver {
+pub trait MessageObserver {
     type Err;
     async fn on_start(&mut self, _client: &mut proto::Channel) -> Result<(), Self::Err> {
         log::debug!("Starting");
@@ -116,6 +119,50 @@ pub trait ChannelObserver {
         &mut self,
         _client: &mut proto::Channel,
         message: &proto::schema::ExtensionMessage,
+    ) -> Result<(), Self::Err> {
+        log::debug!("Received message {:?}", message);
+        Ok(())
+    }
+}
+
+#[async_trait]
+pub trait EventObserver<S>
+where
+    S: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
+{
+    type Err;
+
+    async fn on_handshake(
+        &mut self,
+        _client: &mut proto::Protocol<S, S>,
+        message: &[u8],
+    ) -> Result<(), Self::Err> {
+        log::debug!("Received message {:?}", message);
+        Ok(())
+    }
+
+    async fn on_discovery_key(
+        &mut self,
+        _client: &mut proto::Protocol<S, S>,
+        message: &[u8],
+    ) -> Result<(), Self::Err> {
+        log::debug!("Received message {:?}", message);
+        Ok(())
+    }
+
+    async fn on_close(
+        &mut self,
+        _client: &mut proto::Protocol<S, S>,
+        message: &[u8],
+    ) -> Result<(), Self::Err> {
+        log::debug!("Received message {:?}", message);
+        Ok(())
+    }
+
+    async fn on_channel(
+        &mut self,
+        _client: &mut proto::Protocol<S, S>,
+        message: &[u8],
     ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}", message);
         Ok(())

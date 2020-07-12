@@ -56,7 +56,7 @@ fn main() {
                 .expect("Invalid intialization"),
         ));
         // TODO put observer on the loop
-        let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
+        let observer = PeeredHyperdrive::new(hyperdrive, client).expect("Could not peer hyperdrive");
         let mut service = HypercoreService::stream(client);
         while let Some(e) = service.next().await {
             dbg!(&e);
