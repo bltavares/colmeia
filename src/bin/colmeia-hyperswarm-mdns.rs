@@ -21,7 +21,7 @@ fn main() {
 
     let duration = env::args()
         .nth(3)
-        .unwrap_or("10".into())
+        .unwrap_or_else(|| "10".into())
         .parse::<u64>()
         .expect("Could not parse duration into a number");
 

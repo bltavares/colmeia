@@ -43,7 +43,7 @@ fn main() {
                         .await
                         .expect("could not start the stream");
                 }
-                proto::Event::DiscoveryKey(_) => {}
+                proto::Event::DiscoveryKey(_) | proto::Event::Close(_) => {}
                 proto::Event::Channel(mut channel) => {
                     let msg = proto::schema::Close {
                         discovery_key: Some(dat_key.discovery_key().to_vec()),
@@ -53,7 +53,6 @@ fn main() {
                         .await
                         .expect("could not close the channel");
                 }
-                proto::Event::Close(_) => {}
             };
         }
     });

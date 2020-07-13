@@ -33,6 +33,12 @@ pub enum UrlResolution<'a> {
     RemoteUrl(DatUrl<'a>),
 }
 
+/// Parses a url as a Dat based url
+/// Supports a hash or a regular DNS domain
+///
+/// # Errors
+///
+/// If the string cannot be parsed as a regular DNS domain or Dat Public Key
 pub fn parse(dat_name: &str) -> Result<UrlResolution, Error> {
     let dat_url = DatUrl::parse(dat_name)?.into_owned();
     let public_key_bytes = hex::decode(dat_url.host().as_bytes());
@@ -64,14 +70,17 @@ impl HashUrl {
         }
     }
 
+    #[must_use]
     pub fn local_dns_domain(&self) -> &str {
         &self.local_dns_domain
     }
 
+    #[must_use]
     pub fn discovery_key(&self) -> &[u8] {
         &self.discovery_key
     }
 
+    #[must_use]
     pub fn public_key(&self) -> &PublicKey {
         &self.public_key
     }

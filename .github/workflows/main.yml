@@ -31,7 +31,9 @@ jobs:
           args: --all -- --check
 
       - name: Run cargo clippy
-        run: cargo clippy --workspace -- -D clippy::pedantic
+        run: cargo clippy --workspace
+        # Until rust 1.45 lands https://github.com/rust-lang/rust-clippy/pull/5535
+        #-- -D clippy::pedantic
 
   check:
     name: Check
