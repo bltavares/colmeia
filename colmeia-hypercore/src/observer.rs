@@ -130,7 +130,7 @@ pub trait EventObserver<S>
 where
     S: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
 {
-    type Err;
+    type Err: std::fmt::Debug;
 
     async fn on_handshake(
         &mut self,
@@ -162,9 +162,17 @@ where
     async fn on_channel(
         &mut self,
         _client: &mut proto::Protocol<S, S>,
-        message: &[u8],
+        message: proto::Channel,
     ) -> Result<(), Self::Err> {
         log::debug!("Received message {:?}", message);
+        Ok(())
+    }
+
+    async fn loop_next(
+        &mut self,
+        _client: &mut proto::Protocol<S, S>,
+    ) -> Result<(), Self::Err> {
+        log::debug!("Looping");
         Ok(())
     }
 }

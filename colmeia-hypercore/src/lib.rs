@@ -1,5 +1,5 @@
 use anyhow::Context;
-use async_std::{future::IntoFuture, stream::IntoStream, task};
+use async_std::{future::IntoFuture, stream::IntoStream, sync::RwLock, task};
 use ed25519_dalek::PublicKey;
 use futures::{
     io::{AsyncRead, AsyncWrite},
@@ -9,7 +9,7 @@ use std::{
     collections::HashMap,
     io,
     pin::Pin,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex},
 };
 
 use hypercore_protocol as proto;
@@ -18,6 +18,7 @@ mod network;
 mod observer;
 
 pub use network::hyperdrive::PeeredHyperdrive;
+use observer::EventObserver;
 
 /// Returns a successfully handshaken stream
 pub async fn initiate<S>(public_key: &PublicKey, tcp_stream: S) -> io::Result<proto::Protocol<S, S>>
@@ -73,54 +74,52 @@ pub enum Item {
 }
 
 pub struct HypercoreService {
-    stream: Pin<Box<dyn futures::Stream<Item = Item>>>,
+    stream: Pin<Box<dyn futures::Stream<Item = ()>>>,
 }
 
 impl HypercoreService {
-    pub fn stream<C>(client: proto::Protocol<C, C>) -> Self
+    pub fn stream<C>(
+        client: proto::Protocol<C, C>,
+        observer: impl EventObserver<C> + Send + 'static,
+    ) -> Self
     where
         C: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
     {
-        let queue = Arc::new(async_std::sync::RwLock::new(
-            futures::stream::FuturesUnordered::new(),
-        ));
+        // TODO Convert to a stream instead of a future with a loop
+        let stream = futures::stream::unfold(
+            (client, observer),
+            |(mut client, mut observer)| async move {
+                let event = match client.loop_next().await {
+                    Ok(e) => e,
+                    Err(_) => return None,
+                };
 
-        let rw_queue = queue.clone();
-
-        let event_loop =
-            futures::stream::unfold((client, rw_queue), |(mut client, rw_queue)| async {
-                match client.loop_next().await {
-                    Ok(event) => {
-                        dbg!(&event);
-                        let event = match dbg!(event) {
-                            proto::Event::Channel(channel) => {
-                                rw_queue.read().await.push(channel.into_future());
-                                None
-                            }
-                            event => Some(event),
-                        };
-                        Some((event, (client, rw_queue)))
+                let result = match dbg!(event) {
+                    proto::Event::Handshake(message) => {
+                        observer.on_handshake(&mut client, &message).await
                     }
-                    Err(_) => None,
-                }
-            })
-            .filter_map(|i| async { i })
-            .map(Item::Event);
+                    proto::Event::DiscoveryKey(message) => {
+                        observer.on_discovery_key(&mut client, &message).await
+                    }
+                    proto::Event::Channel(message) => {
+                        observer.on_channel(&mut client, message).await
+                    }
+                    proto::Event::Close(message) => observer.on_close(&mut client, &message).await,
+                };
 
-        let channel_loop = futures::stream::unfold(queue, |queue| async move {
-            let result = queue.write().await.next().await;
-            if let Some((Some(message), stream)) = result {
-                queue.read().await.push(stream.into_future());
-                Some((Some(message), queue))
-            } else {
-                Some((None, queue))
-            }
-        })
-        .filter_map(|i| async { i })
-        .map(Item::Message);
+                if let Err(e) = result {
+                    log::error!("Failed when dealing with event loop {:?}", e);
+                    return None;
+                };
 
-        // TODO why does merge does not work?!
-        let stream = async_std::stream::StreamExt::merge(channel_loop, event_loop);
+                let _ = match client.loop_next().await {
+                    Ok(e) => e,
+                    Err(_) => return None,
+                };
+
+                Some(((), (client, observer)))
+            },
+        );
 
         HypercoreService {
             stream: Box::pin(stream),
@@ -129,7 +128,7 @@ impl HypercoreService {
 }
 
 impl futures::Stream for HypercoreService {
-    type Item = Item;
+    type Item = ();
     fn poll_next(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,

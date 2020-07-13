@@ -1,9 +1,7 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use std::{
-    net::SocketAddr,
-    sync::{Arc, RwLock},
-};
+use async_std::sync::RwLock;
+use std::{net::SocketAddr, sync::Arc};
 
 use colmeia_hypercore::*;
 use colmeia_hypercore_utils::{parse, UrlResolution};
@@ -56,8 +54,8 @@ fn main() {
                 .expect("Invalid intialization"),
         ));
         // TODO put observer on the loop
-        let observer = PeeredHyperdrive::new(hyperdrive, client).expect("Could not peer hyperdrive");
-        let mut service = HypercoreService::stream(client);
+        let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
+        let mut service = HypercoreService::stream(client, observer);
         while let Some(e) = service.next().await {
             dbg!(&e);
         }

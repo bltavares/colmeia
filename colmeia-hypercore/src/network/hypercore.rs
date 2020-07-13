@@ -1,4 +1,7 @@
-use std::sync::{Arc, RwLock};
+use async_std::sync::RwLock;
+use futures::stream::StreamExt;
+use hypercore_protocol as proto;
+use std::sync::Arc;
 
 pub struct PeeredHypercore<Storage>
 where
@@ -8,7 +11,7 @@ where
         + Sync,
 {
     feed: Arc<RwLock<hypercore::Feed<Storage>>>,
-    channel: u64,
+    channel: proto::Channel,
     // handshake: SimpleDatHandshake,
     // remote_bitfield: hypercore::bitfield::Bitfield,
     remote_length: usize,
@@ -21,7 +24,7 @@ where
         + Send
         + Sync,
 {
-    pub fn new(channel: u64, feed: Arc<RwLock<hypercore::Feed<Storage>>>) -> Self {
+    pub fn new(channel: proto::Channel, feed: Arc<RwLock<hypercore::Feed<Storage>>>) -> Self {
         Self {
             feed,
             channel,
@@ -29,5 +32,9 @@ where
             // remote_bitfield: hypercore::bitfield::Bitfield::default(),
             remote_length: 0,
         }
+    }
+
+    pub async fn loop_next(&mut self) -> Option<proto::Message> {
+        self.channel.next().await
     }
 }
