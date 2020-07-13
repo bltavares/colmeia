@@ -5,7 +5,10 @@ use crate::{
 };
 
 use async_std::sync::RwLock;
-use futures::{StreamExt, io::{AsyncRead, AsyncWrite}};
+use futures::{
+    io::{AsyncRead, AsyncWrite},
+    StreamExt,
+};
 use hypercore_protocol as proto;
 use std::sync::Arc;
 
