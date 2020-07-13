@@ -55,7 +55,7 @@ fn main() {
         ));
         // TODO put observer on the loop
         let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
-        let mut service = HypercoreService::stream(client, observer);
+        let mut service = EventDriver::stream(client, observer);
         while let Some(e) = service.next().await {
             dbg!(&e);
         }

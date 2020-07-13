@@ -1,3 +1,4 @@
+use crate::observer::MessageObserver;
 use async_std::sync::RwLock;
 use futures::stream::StreamExt;
 use hypercore_protocol as proto;
@@ -11,7 +12,6 @@ where
         + Sync,
 {
     feed: Arc<RwLock<hypercore::Feed<Storage>>>,
-    channel: proto::Channel,
     // handshake: SimpleDatHandshake,
     // remote_bitfield: hypercore::bitfield::Bitfield,
     remote_length: usize,
@@ -24,17 +24,22 @@ where
         + Send
         + Sync,
 {
-    pub fn new(channel: proto::Channel, feed: Arc<RwLock<hypercore::Feed<Storage>>>) -> Self {
+    pub fn new(feed: Arc<RwLock<hypercore::Feed<Storage>>>) -> Self {
         Self {
             feed,
-            channel,
             // handshake: SimpleDatHandshake::default(),
             // remote_bitfield: hypercore::bitfield::Bitfield::default(),
             remote_length: 0,
         }
     }
+}
 
-    pub async fn loop_next(&mut self) -> Option<proto::Message> {
-        self.channel.next().await
-    }
+impl<Storage> MessageObserver for PeeredHypercore<Storage>
+where
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
+{
+    type Err = anyhow::Error;
 }

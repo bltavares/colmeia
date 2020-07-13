@@ -1,8 +1,11 @@
 use super::hypercore::PeeredHypercore;
-use crate::{observer::EventObserver, Hyperdrive};
+use crate::{
+    observer::{EventObserver, MessageDriver},
+    Hyperdrive,
+};
 
 use async_std::sync::RwLock;
-use futures::io::{AsyncRead, AsyncWrite};
+use futures::{StreamExt, io::{AsyncRead, AsyncWrite}};
 use hypercore_protocol as proto;
 use std::sync::Arc;
 
@@ -13,9 +16,9 @@ where
         + Send
         + Sync,
 {
-    metadata: Option<PeeredHypercore<Storage>>,
+    metadata: Option<MessageDriver>,
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
-    content: Option<PeeredHypercore<Storage>>,
+    content: Option<MessageDriver>,
     // delay_feed_content: Option<proto::Feed>,
 }
 
@@ -42,7 +45,8 @@ where
     Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
         + std::fmt::Debug
         + Send
-        + Sync,
+        + Sync
+        + 'static,
     S: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
 {
     type Err = anyhow::Error;
@@ -55,14 +59,14 @@ where
         if self.metadata.is_none() {
             log::debug!("initializing metadata feed");
             let feed = self.hyperdrive.read().await.metadata.clone();
-            let core = PeeredHypercore::new(channel, feed);
+            let core = MessageDriver::stream(channel, PeeredHypercore::new(feed));
             self.metadata = Some(core);
             return Ok(());
         };
         if self.content.is_none() {
             log::debug!("initializing content feed");
             let feed = self.hyperdrive.read().await.metadata.clone();
-            let core = PeeredHypercore::new(channel, feed);
+            let core = MessageDriver::stream(channel, PeeredHypercore::new(feed));
             self.metadata = Some(core);
             return Ok(());
         }
@@ -78,18 +82,20 @@ where
         if self.metadata.is_none() {
             let drive = self.hyperdrive.read().await;
             let metadata = drive.metadata.read().await;
-            client.open(metadata.public_key().as_bytes().to_vec()).await?;
+            client
+                .open(metadata.public_key().as_bytes().to_vec())
+                .await?;
         }
         Ok(())
     }
 
     async fn loop_next(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
         if let Some(ref mut metadata) = &mut self.metadata {
-            dbg!(metadata.loop_next().await);
+            dbg!(metadata.next().await);
         }
 
         if let Some(ref mut content) = &mut self.content {
-            dbg!(content.loop_next().await);
+            dbg!(content.next().await);
         }
 
         Ok(())
