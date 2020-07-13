@@ -360,6 +360,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
+ "bitfield-rle",
  "ed25519-dalek",
  "futures",
  "hypercore",

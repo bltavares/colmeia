@@ -13,6 +13,7 @@ random-access-storage = '4.0.0'
 random-access-memory = '2.0.0'
 async-trait = '0.1.36'
 log = '0.4.8'
+bitfield-rle = '0.2.0'
 
 [dependencies.async-std]
 version = '1.6.2'
