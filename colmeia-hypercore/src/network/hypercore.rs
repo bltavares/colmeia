@@ -64,6 +64,7 @@ where
         client: &mut proto::Channel,
         message: &proto::schema::Want,
     ) -> Result<(), Self::Err> {
+        dbg!("Received want");
         // We only reploy to multiple of 8192 in terms of offsets and lengths for want messages
         // since this is much easier for the bitfield, in terms of paging.
         if (message.start & 8191 != 0) || (message.length.unwrap_or(0) & 8191 != 0) {

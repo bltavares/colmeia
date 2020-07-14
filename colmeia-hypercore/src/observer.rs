@@ -1,10 +1,11 @@
+use async_std::prelude::FutureExt;
 use async_trait::async_trait;
 use futures::{
     io::{AsyncRead, AsyncWrite},
     StreamExt,
 };
 use hypercore_protocol as proto;
-use std::{pin::Pin, task};
+use std::{pin::Pin, task, time::Duration};
 
 // TODO macro?
 
@@ -26,7 +27,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Open,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_open {:?}", message);
         Ok(())
     }
 
@@ -35,7 +36,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Options,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_options {:?}", message);
         Ok(())
     }
 
@@ -44,7 +45,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Status,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_status {:?}", message);
         Ok(())
     }
 
@@ -53,7 +54,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Have,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_have {:?}", message);
         Ok(())
     }
 
@@ -62,7 +63,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Unhave,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_unhave {:?}", message);
         Ok(())
     }
 
@@ -71,7 +72,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Want,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_want {:?}", message);
         Ok(())
     }
 
@@ -80,7 +81,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Unwant,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_unwant {:?}", message);
         Ok(())
     }
 
@@ -89,7 +90,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Request,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_request {:?}", message);
         Ok(())
     }
 
@@ -98,7 +99,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Cancel,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_cancel {:?}", message);
         Ok(())
     }
 
@@ -107,7 +108,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Data,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_data {:?}", message);
         Ok(())
     }
 
@@ -116,7 +117,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::Close,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_close {:?}", message);
         Ok(())
     }
 
@@ -125,7 +126,7 @@ pub trait MessageObserver {
         _client: &mut proto::Channel,
         message: &proto::schema::ExtensionMessage,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_extension {:?}", message);
         Ok(())
     }
 }
@@ -139,16 +140,25 @@ impl MessageDriver {
         channel: proto::Channel,
         observer: impl MessageObserver + Send + 'static,
     ) -> Self {
-        // TODO Convert to a stream instead of a future with a loop
         let stream = futures::stream::unfold(
-            (channel, observer),
-            |(mut channel, mut observer)| async move {
-                let event = match channel.next().await {
-                    Some(e) => e,
-                    None => return Some((None, (channel, observer))),
+            (channel, observer, 0, true),
+            |(mut channel, mut observer, error_count, first_loop)| async move {
+                if first_loop {
+                    // drop stream on initialization error
+                    observer.on_start(&mut channel).await.ok()?;
+                }
+
+                if error_count > 3 {
+                    observer.on_finish(&mut channel).await;
+                    return None;
+                }
+
+                let message = match channel.next().timeout(Duration::from_secs(1)).await {
+                    Ok(Some(e)) => e,
+                    _ => return Some((None, (channel, observer, error_count + 1, false))),
                 };
 
-                let result = match &event {
+                let result = match dbg!(&message) {
                     proto::Message::Open(message) => observer.on_open(&mut channel, &message).await,
                     proto::Message::Options(message) => {
                         observer.on_options(&mut channel, &message).await
@@ -181,10 +191,10 @@ impl MessageDriver {
 
                 if let Err(e) = result {
                     log::error!("Failed when dealing with event loop {:?}", e);
-                    return None;
+                    return Some((None, (channel, observer, error_count + 1, false)));
                 };
 
-                Some((Some(event), (channel, observer)))
+                Some((Some(message), (channel, observer, 0, false)))
             },
         )
         .filter_map(|i| async { i });
@@ -212,12 +222,21 @@ where
 {
     type Err: std::fmt::Debug;
 
+    async fn on_start(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
+        log::debug!("Starting");
+        Ok(())
+    }
+
+    async fn on_finish(&mut self, _client: &mut proto::Protocol<S, S>) {
+        log::debug!("on_finish");
+    }
+
     async fn on_handshake(
         &mut self,
         _client: &mut proto::Protocol<S, S>,
         message: &[u8],
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_handshake {:?}", message);
         Ok(())
     }
 
@@ -226,7 +245,7 @@ where
         _client: &mut proto::Protocol<S, S>,
         message: &[u8],
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_discovery_key {:?}", message);
         Ok(())
     }
 
@@ -235,7 +254,7 @@ where
         _client: &mut proto::Protocol<S, S>,
         message: &[u8],
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_close {:?}", message);
         Ok(())
     }
 
@@ -244,12 +263,12 @@ where
         _client: &mut proto::Protocol<S, S>,
         message: proto::Channel,
     ) -> Result<(), Self::Err> {
-        log::debug!("Received message {:?}", message);
+        log::debug!("Received message on_channel {:?}", message);
         Ok(())
     }
 
-    async fn loop_next(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
-        log::debug!("Looping");
+    async fn tick(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
+        log::debug!("Tick");
         Ok(())
     }
 }
@@ -268,11 +287,22 @@ impl EventDriver {
     {
         // TODO Convert to a stream instead of a future with a loop
         let stream = futures::stream::unfold(
-            (client, observer),
-            |(mut client, mut observer)| async move {
-                let event = match client.loop_next().await {
-                    Ok(e) => e,
-                    Err(_) => return None,
+            (client, observer, 0, true),
+            |(mut client, mut observer, error_count, first_loop)| async move {
+                if first_loop {
+                    // drop stream on initialization error
+                    observer.on_start(&mut client).await.ok()?;
+                }
+
+                if error_count > 3 {
+                    observer.on_finish(&mut client).await;
+                    log::debug!("Error count reached maximum penalty. Bailing.");
+                    return None;
+                }
+
+                let event = match client.loop_next().timeout(Duration::from_secs(1)).await {
+                    Ok(Ok(e)) => e,
+                    _ => return Some(((), (client, observer, error_count + 1, false))),
                 };
 
                 let result = match dbg!(event) {
@@ -290,15 +320,15 @@ impl EventDriver {
 
                 if let Err(e) = result {
                     log::error!("Failed when dealing with event loop {:?}", e);
-                    return None;
+                    return Some(((), (client, observer, error_count + 1, false)));
                 };
 
-                let _ = match observer.loop_next(&mut client).await {
+                let _ = match observer.tick(&mut client).await {
                     Ok(e) => e,
-                    Err(_) => return None,
+                    Err(_) => return Some(((), (client, observer, error_count + 1, false))),
                 };
 
-                Some(((), (client, observer)))
+                Some(((), (client, observer, 0, false)))
             },
         );
 

@@ -44,9 +44,7 @@ fn main() {
             _ => panic!("invalid hash key"),
         };
 
-        let client = initiate(hash.public_key(), tcp_stream)
-            .await
-            .expect("could not finish handshake");
+        let client = hypercore_protocol::ProtocolBuilder::initiator().connect(tcp_stream);
 
         let hyperdrive = Arc::new(RwLock::new(
             in_memmory(hash.public_key().clone())

@@ -4,13 +4,11 @@ use crate::{
     Hyperdrive,
 };
 
+use async_std::prelude::{FutureExt, StreamExt};
 use async_std::sync::RwLock;
-use futures::{
-    io::{AsyncRead, AsyncWrite},
-    StreamExt,
-};
+use futures::io::{AsyncRead, AsyncWrite};
 use hypercore_protocol as proto;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 pub struct PeeredHyperdrive<Storage>
 where
@@ -85,20 +83,22 @@ where
         if self.metadata.is_none() {
             let drive = self.hyperdrive.read().await;
             let metadata = drive.metadata.read().await;
-            client
-                .open(metadata.public_key().as_bytes().to_vec())
-                .await?;
+            let public_key_for_metadata = metadata.public_key().as_bytes();
+            let metadata_discovery_key = hypercore_protocol::discovery_key(public_key_for_metadata);
+            if message == metadata_discovery_key.as_slice() {
+                client.open(public_key_for_metadata.to_vec()).await?;
+            }
         }
         Ok(())
     }
 
-    async fn loop_next(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
+    async fn tick(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
         if let Some(ref mut metadata) = &mut self.metadata {
-            dbg!(metadata.next().await);
+            dbg!(metadata.next().timeout(Duration::from_secs(1)).await?);
         }
 
         if let Some(ref mut content) = &mut self.content {
-            dbg!(content.next().await);
+            dbg!(content.next().timeout(Duration::from_secs(1)).await?);
         }
 
         Ok(())
