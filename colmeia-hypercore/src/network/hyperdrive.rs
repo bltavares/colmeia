@@ -93,11 +93,15 @@ where
     }
 
     async fn tick(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
+        dbg!("tick");
+
         if let Some(ref mut metadata) = &mut self.metadata {
+            dbg!("tick - metadata");
             dbg!(metadata.next().timeout(Duration::from_secs(1)).await?);
         }
 
         if let Some(ref mut content) = &mut self.content {
+            dbg!("tick - content");
             dbg!(content.next().timeout(Duration::from_secs(1)).await?);
         }
 

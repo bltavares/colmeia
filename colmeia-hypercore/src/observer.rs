@@ -300,11 +300,19 @@ impl EventDriver {
                     return None;
                 }
 
-                let event = match client.loop_next().timeout(Duration::from_secs(1)).await {
-                    Ok(Ok(e)) => e,
+                drop(
+                    observer
+                        .tick(&mut client)
+                        .timeout(Duration::from_secs(1))
+                        .await,
+                );
+
+                let event = match client.loop_next().await {
+                    Ok(e) => e,
                     _ => return Some(((), (client, observer, error_count + 1, false))),
                 };
 
+                dbg!("next");
                 let result = match dbg!(event) {
                     proto::Event::Handshake(message) => {
                         observer.on_handshake(&mut client, &message).await
@@ -321,11 +329,6 @@ impl EventDriver {
                 if let Err(e) = result {
                     log::error!("Failed when dealing with event loop {:?}", e);
                     return Some(((), (client, observer, error_count + 1, false)));
-                };
-
-                let _ = match observer.tick(&mut client).await {
-                    Ok(e) => e,
-                    Err(_) => return Some(((), (client, observer, error_count + 1, false))),
                 };
 
                 Some(((), (client, observer, 0, false)))

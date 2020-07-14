@@ -49,20 +49,11 @@ where
         channel: &mut proto::Channel,
         message: &proto::schema::Open,
     ) -> Result<(), Self::Err> {
-        dbg!(message);
-
-        let status = proto::schema::Status {
-            downloading: Some(true), // TODO what to do here?
-            uploading: Some(true),   // TODO what to do here?
-        };
-        channel.status(status).await?;
-
         let want = proto::schema::Want {
             start: 0,
-            length: None,
+            length: None, // must be in sizes of 8192 bytes
         };
         channel.want(dbg!(want)).await?;
-
         Ok(())
     }
 
