@@ -155,7 +155,8 @@ impl MessageDriver {
 
                 let message = match channel.next().timeout(Duration::from_secs(1)).await {
                     Ok(Some(e)) => e,
-                    _ => return Some((None, (channel, observer, error_count + 1, false))),
+                    Ok(None) => return Some((None, (channel, observer, error_count + 1, false))),
+                    Err(_) => return Some((None, (channel, observer, error_count, false))),
                 };
 
                 let result = match dbg!(&message) {
@@ -197,7 +198,8 @@ impl MessageDriver {
                 Some((Some(message), (channel, observer, 0, false)))
             },
         )
-        .filter_map(|i| async { i });
+        .filter_map(|i| async { i })
+        .fuse();
 
         Self {
             stream: Box::pin(stream),
@@ -294,22 +296,28 @@ impl EventDriver {
                     observer.on_start(&mut client).await.ok()?;
                 }
 
-                if error_count > 3 {
+                if error_count > 5 {
                     observer.on_finish(&mut client).await;
                     log::debug!("Error count reached maximum penalty. Bailing.");
                     return None;
                 }
 
-                drop(
-                    observer
-                        .tick(&mut client)
-                        .timeout(Duration::from_secs(1))
-                        .await,
-                );
+                let error_count = match observer
+                    .tick(&mut client)
+                    .timeout(Duration::from_secs(1))
+                    .await
+                {
+                    Ok(Ok(_)) => 0,
+                    Ok(Err(_)) => error_count + 1,
+                    Err(_) => error_count,
+                };
 
-                let event = match client.loop_next().await {
-                    Ok(e) => e,
-                    _ => return Some(((), (client, observer, error_count + 1, false))),
+                // It seems like the channel only receives messages if loop_next is called
+                // is that why it is so slow to receive messages?
+                let event = match client.loop_next().timeout(Duration::from_secs(1)).await {
+                    Ok(Ok(e)) => e,
+                    Ok(Err(_)) => return Some(((), (client, observer, error_count + 1, false))),
+                    Err(_) => return Some(((), (client, observer, error_count, false))),
                 };
 
                 dbg!("next");
@@ -333,7 +341,8 @@ impl EventDriver {
 
                 Some(((), (client, observer, 0, false)))
             },
-        );
+        )
+        .fuse();
 
         Self {
             stream: Box::pin(stream),

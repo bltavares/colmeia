@@ -49,6 +49,12 @@ where
         channel: &mut proto::Channel,
         message: &proto::schema::Open,
     ) -> Result<(), Self::Err> {
+        let status = proto::schema::Status {
+            downloading: Some(true),
+            uploading: Some(false), // TODO what to do here
+        };
+        channel.status(dbg!(status)).await?;
+
         let want = proto::schema::Want {
             start: 0,
             length: None, // must be in sizes of 8192 bytes
@@ -57,6 +63,7 @@ where
         Ok(())
     }
 
+    // TODO update port reference
     // https://github.com/mafintosh/hypercore/blob/84990baa477491478f79b968123d2233eebeba76/lib/replicate.js#L109-L123
     async fn on_want(
         &mut self,
@@ -97,7 +104,9 @@ where
         Ok(())
     }
 
-    // https://github.com/mafintosh/hypercore/blob/84990baa477491478f79b968123d2233eebeba76/lib/replicate.js#L295-L343
+    // TODO update port reference
+    // dat1: https://github.com/mafintosh/hypercore/blob/84990baa477491478f79b968123d2233eebeba76/lib/replicate.js#L295-L343
+    // hypercore: ??
     async fn on_have(
         &mut self,
         client: &mut proto::Channel,
@@ -142,7 +151,7 @@ where
                 index,
                 ..Default::default()
             };
-            client.request(request).await?;
+            dbg!(client.request(dbg!(request)).await?);
         }
         Ok(())
     }
