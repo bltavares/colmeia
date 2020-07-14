@@ -22,7 +22,8 @@ version = '1.6.2'
 features = ['unstable']
 
 [dependencies.hypercore-protocol]
-git = 'https://github.com/Frando/hypercore-protocol-rs.git'
+# git = 'https://github.com/Frando/hypercore-protocol-rs'
+path = '../hypercore-protocol-rs'
 
 [dependencies.colmeia-hyperswarm-mdns]
 path = 'colmeia-hyperswarm-mdns'

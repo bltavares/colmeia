@@ -97,12 +97,12 @@ where
 
         if let Some(ref mut metadata) = &mut self.metadata {
             dbg!("tick - metadata");
-            dbg!(metadata.next().timeout(Duration::from_secs(1)).await?);
+            dbg!(metadata.next().await);
         }
 
         if let Some(ref mut content) = &mut self.content {
             dbg!("tick - content");
-            dbg!(content.next().timeout(Duration::from_secs(1)).await?);
+            dbg!(content.next().await);
         }
 
         Ok(())

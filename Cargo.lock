@@ -822,7 +822,6 @@ dependencies = [
 [[package]]
 name = "hypercore-protocol"
 version = "0.0.1"
-source = "git+https://github.com/Frando/hypercore-protocol-rs.git#9a3ad0e17364a2ed3d5801e8e90153e214a4b64d"
 dependencies = [
  "async-trait",
  "blake2-rfc",

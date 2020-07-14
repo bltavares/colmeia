@@ -153,10 +153,9 @@ impl MessageDriver {
                     return None;
                 }
 
-                let message = match channel.next().timeout(Duration::from_secs(1)).await {
-                    Ok(Some(e)) => e,
-                    Ok(None) => return Some((None, (channel, observer, error_count + 1, false))),
-                    Err(_) => return Some((None, (channel, observer, error_count, false))),
+                let message = match channel.next().await {
+                    Some(e) => e,
+                    _ => return Some((None, (channel, observer, error_count, false))),
                 };
 
                 let result = match dbg!(&message) {
@@ -296,7 +295,7 @@ impl EventDriver {
                     observer.on_start(&mut client).await.ok()?;
                 }
 
-                if error_count > 5 {
+                if error_count > 1 {
                     observer.on_finish(&mut client).await;
                     log::debug!("Error count reached maximum penalty. Bailing.");
                     return None;
@@ -304,7 +303,7 @@ impl EventDriver {
 
                 let error_count = match observer
                     .tick(&mut client)
-                    .timeout(Duration::from_secs(1))
+                    .timeout(Duration::from_micros(165))
                     .await
                 {
                     Ok(Ok(_)) => 0,
@@ -317,10 +316,10 @@ impl EventDriver {
                 // Interrupt the loop frequently to allow progress on other channels to happen
                 // Concern: finding the interrupt time correctly, as it could likely lead to data loss when moving the
                 // control message from the internal buffer to close the channel
-                let event = match client.loop_next().timeout(Duration::from_millis(100)).await {
-                    Ok(Ok(e)) => e,
-                    Ok(Err(_)) => return Some(((), (client, observer, error_count + 1, false))),
-                    Err(_) => return Some(((), (client, observer, error_count, false))),
+                let event = match dbg!(client.handle_next().await) {
+                    Ok(Some(e)) => e,
+                    Ok(None) => return Some(((), (client, observer, error_count, false))),
+                    Err(_) => return Some(((), (client, observer, error_count + 1, false))),
                 };
 
                 dbg!("next");
