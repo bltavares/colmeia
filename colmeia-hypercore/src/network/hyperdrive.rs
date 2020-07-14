@@ -103,4 +103,17 @@ where
 
         Ok(())
     }
+
+    async fn on_finish(&mut self, _client: &mut proto::Protocol<S, S>) {
+        let driver = self.hyperdrive.read().await;
+        let mut metadata = driver.metadata.write().await;
+        log::debug!("Metadata audit: {:?}", metadata.audit().await);
+        log::debug!("Metadata len: {:?}", metadata.len());
+
+        if let Some(ref content) = driver.content {
+            let mut content = content.write().await;
+            log::debug!("Content audit: {:?}", content.audit().await);
+            log::debug!("Content len: {:?}", content.len());
+        }
+    }
 }

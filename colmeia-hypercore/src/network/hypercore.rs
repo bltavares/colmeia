@@ -49,11 +49,19 @@ where
         channel: &mut proto::Channel,
         message: &proto::schema::Open,
     ) -> Result<(), Self::Err> {
-        let message = proto::schema::Want {
+        dbg!(message);
+
+        let status = proto::schema::Status {
+            downloading: Some(true), // TODO what to do here?
+            uploading: Some(true),   // TODO what to do here?
+        };
+        channel.status(status).await?;
+
+        let want = proto::schema::Want {
             start: 0,
             length: None,
         };
-        channel.want(dbg!(message)).await?;
+        channel.want(dbg!(want)).await?;
 
         Ok(())
     }
@@ -104,6 +112,7 @@ where
         client: &mut proto::Channel,
         message: &proto::schema::Have,
     ) -> Result<(), Self::Err> {
+        dbg!("received have");
         // TODO implement setting the length and request data on metadata
         if let Some(ref bitfield) = message.bitfield {
             let buf = bitfield_rle::decode(bitfield)
@@ -152,6 +161,8 @@ where
         _client: &mut proto::Channel,
         message: &proto::schema::Data,
     ) -> Result<(), Self::Err> {
+        dbg!("received data");
+
         let proof = hypercore::Proof {
             index: message.index,
             nodes: message
