@@ -314,7 +314,10 @@ impl EventDriver {
 
                 // It seems like the channel only receives messages if loop_next is called
                 // is that why it is so slow to receive messages?
-                let event = match client.loop_next().timeout(Duration::from_secs(1)).await {
+                // Interrupt the loop frequently to allow progress on other channels to happen
+                // Concern: finding the interrupt time correctly, as it could likely lead to data loss when moving the
+                // control message from the internal buffer to close the channel
+                let event = match client.loop_next().timeout(Duration::from_millis(100)).await {
                     Ok(Ok(e)) => e,
                     Ok(Err(_)) => return Some(((), (client, observer, error_count + 1, false))),
                     Err(_) => return Some(((), (client, observer, error_count, false))),
