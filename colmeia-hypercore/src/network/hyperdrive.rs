@@ -1,11 +1,11 @@
 use super::hypercore::PeeredHypercore;
 use crate::{
-    observer::{EventObserver, MessageDriver},
+    observer::{sync_channel, EventObserver},
     Hyperdrive,
 };
 
 use async_std::prelude::{FutureExt, StreamExt};
-use async_std::sync::RwLock;
+use async_std::{sync::RwLock, task};
 use futures::io::{AsyncRead, AsyncWrite};
 use hypercore_protocol as proto;
 use std::{sync::Arc, time::Duration};
@@ -17,9 +17,9 @@ where
         + Send
         + Sync,
 {
-    metadata: Option<MessageDriver>,
+    metadata: Option<task::JoinHandle<anyhow::Result<()>>>,
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
-    content: Option<MessageDriver>,
+    content: Option<task::JoinHandle<anyhow::Result<()>>>,
     // delay_feed_content: Option<proto::Feed>,
 }
 
@@ -50,7 +50,7 @@ where
         + 'static,
     S: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
 {
-    type Err = anyhow::Error;
+    type Err = Box<dyn std::error::Error + Sync + Send>;
 
     async fn on_channel(
         &mut self,
@@ -60,19 +60,19 @@ where
         if self.metadata.is_none() {
             log::debug!("initializing metadata feed");
             let feed = self.hyperdrive.read().await.metadata.clone();
-            let core = MessageDriver::stream(channel, PeeredHypercore::new(feed));
-            self.metadata = Some(core);
+            self.metadata = Some(sync_channel(channel, PeeredHypercore::new(feed)));
             return Ok(());
         };
         if self.content.is_none() {
             log::debug!("initializing content feed");
-            let feed = self.hyperdrive.read().await.metadata.clone();
-            let core = MessageDriver::stream(channel, PeeredHypercore::new(feed));
-            self.metadata = Some(core);
+            let feed = self.hyperdrive.read().await.content.clone();
+            if let Some(feed) = feed {
+                self.content = Some(sync_channel(channel, PeeredHypercore::new(feed)));
+            }
             return Ok(());
         }
 
-        anyhow::bail!("Initialized more than once")
+        return Err(anyhow::Error::msg("Initialized more than once").into());
     }
 
     async fn on_discovery_key(
@@ -89,22 +89,6 @@ where
                 client.open(public_key_for_metadata.to_vec()).await?;
             }
         }
-        Ok(())
-    }
-
-    async fn tick(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
-        dbg!("tick");
-
-        if let Some(ref mut metadata) = &mut self.metadata {
-            dbg!("tick - metadata");
-            dbg!(metadata.next().await);
-        }
-
-        if let Some(ref mut content) = &mut self.content {
-            dbg!("tick - content");
-            dbg!(content.next().await);
-        }
-
         Ok(())
     }
 

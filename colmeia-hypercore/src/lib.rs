@@ -18,7 +18,7 @@ mod network;
 mod observer;
 
 pub use network::hyperdrive::PeeredHyperdrive;
-pub use observer::{EventDriver, EventObserver};
+pub use observer::{EventObserver, stream};
 
 pub struct Hyperdrive<Storage>
 where

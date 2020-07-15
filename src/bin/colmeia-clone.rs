@@ -1,6 +1,6 @@
 use async_std::net::TcpStream;
 use async_std::stream::StreamExt;
-use async_std::sync::RwLock;
+use async_std::{sync::RwLock, task};
 use std::{net::SocketAddr, sync::Arc};
 
 use colmeia_hypercore::*;
@@ -53,9 +53,6 @@ fn main() {
         ));
         // TODO put observer on the loop
         let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
-        let mut service = EventDriver::stream(client, observer);
-        while let Some(e) = service.next().await {
-            dbg!(&e);
-        }
+        stream(client, observer).await.expect("Failed to sync");
     });
 }
