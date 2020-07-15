@@ -15,10 +15,8 @@ use std::{
 use hypercore_protocol as proto;
 
 mod network;
-mod observer;
 
-pub use network::hyperdrive::PeeredHyperdrive;
-pub use observer::{EventObserver, stream};
+pub use network::*;
 
 pub struct Hyperdrive<Storage>
 where

@@ -46,23 +46,10 @@ fn main() {
 
         let client = hypercore_protocol::ProtocolBuilder::initiator().connect(tcp_stream);
 
-        let hyperdrive = Arc::new(RwLock::new(
-            in_memmory(hash.public_key().clone())
-                .await
-                .expect("Invalid intialization"),
-        ));
-        // TODO put observer on the loop
-        let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
-        let (rx, job) = stream(client, observer);
-
-        let (_, result) = task::spawn(async move {
-            while let Ok(e) = rx.recv() {
-                dbg!(e);
-            }
-        })
-        .join(job)
-        .await;
-
-        result.expect("failed to sync");
+        let hyperdrive = in_memmory(hash.public_key().clone())
+            .await
+            .expect("Invalid intialization");
+        let job = sync_hyperdrive(client, hyperdrive);
+        job.await;
     });
 }
