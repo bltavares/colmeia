@@ -212,9 +212,12 @@ where
                         let public_key_for_metadata = metadata.public_key().as_bytes();
                         let metadata_discovery_key =
                             hypercore_protocol::discovery_key(public_key_for_metadata);
-                        if message == metadata_discovery_key.as_slice() {
-                            client.open(public_key_for_metadata.to_vec()).await;
-                        }
+                        if message == metadata_discovery_key.as_slice()
+                            && client.open(public_key_for_metadata.to_vec()).await.is_err()
+                        {
+                            log::error!("failed to open metadata data exchange");
+                            break;
+                        };
                     }
                 }
                 HyperdriveEvents::Client(Ok(proto::Event::Channel(channel))) => {
@@ -277,14 +280,16 @@ where
                                     }
                                 };
 
-                            if let Ok(_) = hyperdrive
+                            if hyperdrive
                                 .write()
                                 .await
                                 .initialize_content_feed(dbg!(public_key))
+                                .is_ok()
+                                && client.open(public_key.as_bytes().to_vec()).await.is_err()
                             {
-                                dbg!(client.open(public_key.as_bytes().to_vec()).await);
-                                continue;
-                            }
+                                log::error!("failed to open metadata data exchange");
+                                break;
+                            };
                         }
                     }
                 }

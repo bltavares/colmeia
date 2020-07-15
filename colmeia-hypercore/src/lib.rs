@@ -1,18 +1,7 @@
 use anyhow::Context;
-use async_std::{future::IntoFuture, stream::IntoStream, sync::RwLock, task};
+use async_std::sync::RwLock;
 use ed25519_dalek::PublicKey;
-use futures::{
-    io::{AsyncRead, AsyncWrite},
-    StreamExt,
-};
-use std::{
-    collections::HashMap,
-    io,
-    pin::Pin,
-    sync::{Arc, Mutex},
-};
-
-use hypercore_protocol as proto;
+use std::sync::Arc;
 
 mod network;
 mod schema;
