@@ -15,6 +15,7 @@ use std::{
 use hypercore_protocol as proto;
 
 mod network;
+mod schema;
 
 pub use network::*;
 
@@ -28,6 +29,29 @@ where
     pub(crate) metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
     pub(crate) content: Option<Arc<RwLock<hypercore::Feed<Storage>>>>,
     content_storage: Option<hypercore::Storage<Storage>>,
+}
+
+impl<Storage> Hyperdrive<Storage>
+where
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
+{
+    pub fn initialize_content_feed(
+        &mut self,
+        public_key: hypercore::PublicKey,
+    ) -> anyhow::Result<Arc<RwLock<hypercore::Feed<Storage>>>> {
+        if let Some(storage) = self.content_storage.take() {
+            let feed = hypercore::Feed::builder(public_key, storage)
+                .build()
+                .context("Could not start hypercore feed")?;
+
+            self.content = Some(Arc::new(RwLock::new(feed)));
+        }
+
+        Ok(self.content.as_ref().context("No content to use")?.clone())
+    }
 }
 
 pub async fn in_memmory(

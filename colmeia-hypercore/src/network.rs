@@ -190,6 +190,7 @@ where
         let mut content_job = Some(JobHolder::Sender(content_sx));
 
         loop {
+            dbg!("start loop");
             let (event, _, _) = futures::future::select_all(vec![
                 client.loop_next().map(HyperdriveEvents::Client).boxed(),
                 metadata_rx
@@ -247,8 +248,49 @@ where
                     break;
                 }
                 // TODO listen to metadata ondata evnt to initialize content feed
+                HyperdriveEvents::Metadata(_) => {
+                    if let Some(JobHolder::Sender(_)) = &content_job {
+                        dbg!("metadata on data");
+
+                        // Initialize the content feed if we have no job started
+                        let initial_metadata = {
+                            let driver = hyperdrive.read().await;
+                            let mut metadata = driver.metadata.write().await;
+                            metadata.get(0).await
+                        };
+                        if let Ok(Some(initial_metadata)) = initial_metadata {
+                            let content = match protobuf::parse_from_bytes::<crate::schema::Index>(
+                                &initial_metadata,
+                            ) {
+                                Ok(e) => e,
+                                _ => continue,
+                            };
+
+                            let public_key =
+                                match hypercore::PublicKey::from_bytes(content.get_content()) {
+                                    Ok(e) => e,
+                                    _ => {
+                                        log::error!(
+                                            "feed content first entry is not a valid public key",
+                                        );
+                                        break;
+                                    }
+                                };
+
+                            if let Ok(_) = hyperdrive
+                                .write()
+                                .await
+                                .initialize_content_feed(dbg!(public_key))
+                            {
+                                dbg!(client.open(public_key.as_bytes().to_vec()).await);
+                                continue;
+                            }
+                        }
+                    }
+                }
                 _ => {}
             };
+            dbg!("here");
         }
     })
 }
