@@ -60,14 +60,30 @@ where
         if self.metadata.is_none() {
             log::debug!("initializing metadata feed");
             let feed = self.hyperdrive.read().await.metadata.clone();
-            self.metadata = Some(sync_channel(channel, PeeredHypercore::new(feed)));
+            let (rx, job) = sync_channel(channel, PeeredHypercore::new(feed));
+            self.metadata = Some(task::spawn(async move {
+                while let Ok(e) = rx.recv() {
+                    // Issue: can't mutate self here anymore because closure is move
+                    // Issue: can't use client anymore because it is a mut ref
+                    // do something when data arrives to start the other channel
+                }
+                job.await
+            }));
             return Ok(());
         };
         if self.content.is_none() {
             log::debug!("initializing content feed");
             let feed = self.hyperdrive.read().await.content.clone();
             if let Some(feed) = feed {
-                self.content = Some(sync_channel(channel, PeeredHypercore::new(feed)));
+                let (rx, job) = sync_channel(channel, PeeredHypercore::new(feed));
+                self.content = Some(task::spawn(async move {
+                    while let Ok(e) = rx.recv() {
+                        // Issue: can't mutate self here anymore because closure is move
+                        // Issue: can't use client anymore because it is a move ref
+                        // do something when data arrives to start the other channel
+                    }
+                    job.await
+                }));
             }
             return Ok(());
         }

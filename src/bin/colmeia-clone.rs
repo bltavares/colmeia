@@ -1,5 +1,5 @@
 use async_std::net::TcpStream;
-use async_std::stream::StreamExt;
+use async_std::prelude::FutureExt;
 use async_std::{sync::RwLock, task};
 use std::{net::SocketAddr, sync::Arc};
 
@@ -53,6 +53,16 @@ fn main() {
         ));
         // TODO put observer on the loop
         let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
-        stream(client, observer).await.expect("Failed to sync");
+        let (rx, job) = stream(client, observer);
+
+        let (_, result) = task::spawn(async move {
+            while let Ok(e) = rx.recv() {
+                dbg!(e);
+            }
+        })
+        .join(job)
+        .await;
+
+        result.expect("failed to sync");
     });
 }

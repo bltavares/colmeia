@@ -1,7 +1,6 @@
 use anyhow::Context;
 use async_std::{prelude::FutureExt, sync::RwLock, task};
 use async_trait::async_trait;
-use crossbeam_queue::SegQueue;
 use futures::{
     io::{AsyncRead, AsyncWrite},
     StreamExt,
@@ -136,8 +135,12 @@ pub trait MessageObserver {
 pub fn sync_channel(
     mut channel: proto::Channel,
     mut observer: impl MessageObserver + Send + 'static,
-) -> task::JoinHandle<anyhow::Result<()>> {
-    task::spawn(async move {
+) -> (
+    crossbeam_channel::Receiver<proto::Message>,
+    task::JoinHandle<anyhow::Result<()>>,
+) {
+    let (sx, rx) = crossbeam_channel::unbounded();
+    let job = task::spawn(async move {
         if let Err(_) = observer.on_start(&mut channel).await {
             anyhow::bail!("failed on start");
         };
@@ -172,7 +175,8 @@ pub fn sync_channel(
 
         observer.on_finish(&mut channel).await;
         Ok(())
-    })
+    });
+    (rx, job)
 }
 
 #[async_trait]
@@ -180,7 +184,7 @@ pub trait EventObserver<S>
 where
     S: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
 {
-    type Err: std::fmt::Debug;
+    type Err: std::fmt::Debug + Send;
 
     async fn on_start(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
         log::debug!("Starting");
@@ -231,25 +235,35 @@ where
 pub fn stream<C>(
     mut client: proto::Protocol<C, C>,
     mut observer: impl EventObserver<C> + Send + 'static,
-) -> task::JoinHandle<anyhow::Result<()>>
+) -> (
+    crossbeam_channel::Receiver<proto::Event>,
+    task::JoinHandle<anyhow::Result<()>>,
+)
 where
     C: AsyncRead + AsyncWrite + Send + Unpin + Clone + 'static,
 {
-    task::spawn(async move {
+    let (sx, rx) = crossbeam_channel::unbounded();
+    let job = task::spawn(async move {
         if let Err(_) = observer.on_start(&mut client).await {
             anyhow::bail!("Failed to start stream");
         }
 
         while let Ok(event) = client.loop_next().await {
-            let result = match dbg!(event) {
+            let result = match dbg!(&event) {
                 proto::Event::Handshake(message) => {
                     observer.on_handshake(&mut client, &message).await
                 }
                 proto::Event::DiscoveryKey(message) => {
                     observer.on_discovery_key(&mut client, &message).await
                 }
-                proto::Event::Channel(message) => observer.on_channel(&mut client, message).await,
-                proto::Event::Close(message) => observer.on_close(&mut client, &message).await,
+                proto::Event::Channel(message) => Ok(()),
+                proto::Event::Close(ref message) => observer.on_close(&mut client, &message).await,
+            };
+
+            if let proto::Event::Channel(message) = event {
+                observer.on_channel(&mut client, message).await;
+            } else {
+                sx.send(event);
             };
 
             if let Err(e) = result {
@@ -258,5 +272,7 @@ where
         }
         observer.on_finish(&mut client).await;
         Ok(())
-    })
+    });
+
+    (rx, job)
 }
