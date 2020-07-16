@@ -1,15 +1,15 @@
 use super::hypercore::PeeredHypercore;
 use crate::{
     observer::{EventObserver, MessageDriver},
-    Hyperdrive, Emit,
+    Emit, Hyperdrive,
 };
 
-use async_std::prelude::{FutureExt, StreamExt};
+use anyhow::Context;
+use async_std::prelude::StreamExt;
 use async_std::sync::RwLock;
 use futures::io::{AsyncRead, AsyncWrite};
 use hypercore_protocol as proto;
-use std::{sync::Arc, time::Duration};
-use anyhow::Context;
+use std::sync::Arc;
 
 pub struct PeeredHyperdrive<Storage>
 where
@@ -21,7 +21,6 @@ where
     metadata: Option<MessageDriver>,
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
     content: Option<MessageDriver>,
-    // delay_feed_content: Option<proto::Feed>,
 }
 
 impl<Storage> PeeredHyperdrive<Storage>
@@ -36,11 +35,9 @@ where
             metadata: None,
             hyperdrive,
             content: None,
-            // delay_feed_content: None,
         })
     }
 }
-
 
 #[async_trait::async_trait]
 impl<Storage, S> EventObserver<S> for PeeredHyperdrive<Storage>
@@ -70,7 +67,7 @@ where
             log::debug!("initializing content feed");
             let feed = self.hyperdrive.read().await.content.clone();
             if let Some(feed) = feed {
-                let core = MessageDriver::stream(channel, PeeredHypercore::new(feed.clone()));
+                let core = MessageDriver::stream(channel, PeeredHypercore::new(feed));
                 self.content = Some(core);
             };
             return Ok(());
@@ -110,18 +107,20 @@ where
                         metadata.get(0).await
                     };
                     if let Ok(Some(initial_metadata)) = initial_metadata {
-                        let content: crate::schema::Index = protobuf::parse_from_bytes(&initial_metadata)?;
+                        let content: crate::schema::Index =
+                            protobuf::parse_from_bytes(&initial_metadata)?;
                         let public_key = hypercore::PublicKey::from_bytes(content.get_content())
                             .context("invalid content key stored in metadata")?;
-                        self.hyperdrive.write().await.initialize_content_feed(public_key)?;
+                        self.hyperdrive
+                            .write()
+                            .await
+                            .initialize_content_feed(public_key)?;
                         client.open(public_key.as_bytes().to_vec()).await?;
                     }
                 }
             };
         }
 
-        dbg!("tick - content");
-dbg!(self.content.is_some());
         if let Some(ref mut content) = &mut self.content {
             dbg!(content.next().await);
         }

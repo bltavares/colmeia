@@ -1,25 +1,16 @@
-use anyhow::Context;
-use async_std::{future::IntoFuture, stream::IntoStream, sync::RwLock, task};
-use ed25519_dalek::PublicKey;
-use futures::{
-    io::{AsyncRead, AsyncWrite},
-    StreamExt,
-};
-use std::{
-    collections::HashMap,
-    io,
-    pin::Pin,
-    sync::{Arc, Mutex},
-};
+#![allow(clippy::module_name_repetitions)]
 
-use hypercore_protocol as proto;
+use anyhow::Context;
+use async_std::sync::RwLock;
+use ed25519_dalek::PublicKey;
+use std::sync::Arc;
 
 mod network;
 mod observer;
 mod schema;
 
 pub use network::hyperdrive::PeeredHyperdrive;
-pub use observer::{EventDriver, EventObserver, Emit};
+pub use observer::{Emit, EventDriver, EventObserver};
 
 pub struct Hyperdrive<Storage>
 where

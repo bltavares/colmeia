@@ -47,7 +47,7 @@ where
     async fn on_open(
         &mut self,
         channel: &mut proto::Channel,
-        message: &proto::schema::Open,
+        _: &proto::schema::Open,
     ) -> Result<(), Self::Err> {
         let status = proto::schema::Status {
             downloading: Some(true),

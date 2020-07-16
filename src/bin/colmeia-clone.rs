@@ -47,11 +47,10 @@ fn main() {
         let client = hypercore_protocol::ProtocolBuilder::initiator().connect(tcp_stream);
 
         let hyperdrive = Arc::new(RwLock::new(
-            in_memmory(hash.public_key().clone())
+            in_memmory(*hash.public_key())
                 .await
                 .expect("Invalid intialization"),
         ));
-        // TODO put observer on the loop
         let observer = PeeredHyperdrive::new(hyperdrive).expect("Could not peer hyperdrive");
         let mut service = EventDriver::stream(client, observer);
         while let Some(e) = service.next().await {
