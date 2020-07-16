@@ -1,7 +1,7 @@
 use super::hypercore::PeeredHypercore;
 use crate::{
     observer::{EventObserver, MessageDriver},
-    Hyperdrive,
+    Hyperdrive, Emit,
 };
 
 use async_std::prelude::{FutureExt, StreamExt};
@@ -9,6 +9,7 @@ use async_std::sync::RwLock;
 use futures::io::{AsyncRead, AsyncWrite};
 use hypercore_protocol as proto;
 use std::{sync::Arc, time::Duration};
+use anyhow::Context;
 
 pub struct PeeredHyperdrive<Storage>
 where
@@ -40,6 +41,7 @@ where
     }
 }
 
+
 #[async_trait::async_trait]
 impl<Storage, S> EventObserver<S> for PeeredHyperdrive<Storage>
 where
@@ -66,9 +68,11 @@ where
         };
         if self.content.is_none() {
             log::debug!("initializing content feed");
-            let feed = self.hyperdrive.read().await.metadata.clone();
-            let core = MessageDriver::stream(channel, PeeredHypercore::new(feed));
-            self.metadata = Some(core);
+            let feed = self.hyperdrive.read().await.content.clone();
+            if let Some(feed) = feed {
+                let core = MessageDriver::stream(channel, PeeredHypercore::new(feed.clone()));
+                self.content = Some(core);
+            };
             return Ok(());
         }
 
@@ -92,16 +96,33 @@ where
         Ok(())
     }
 
-    async fn tick(&mut self, _client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
+    async fn tick(&mut self, client: &mut proto::Protocol<S, S>) -> Result<(), Self::Err> {
         dbg!("tick");
 
         if let Some(ref mut metadata) = &mut self.metadata {
             dbg!("tick - metadata");
-            dbg!(metadata.next().await);
+            if let Some(Emit::Message(proto::Message::Data(_))) = metadata.next().await {
+                // initializes content feed when metadata has data
+                if self.content.is_none() {
+                    let initial_metadata = {
+                        let driver = self.hyperdrive.read().await;
+                        let mut metadata = driver.metadata.write().await;
+                        metadata.get(0).await
+                    };
+                    if let Ok(Some(initial_metadata)) = initial_metadata {
+                        let content: crate::schema::Index = protobuf::parse_from_bytes(&initial_metadata)?;
+                        let public_key = hypercore::PublicKey::from_bytes(content.get_content())
+                            .context("invalid content key stored in metadata")?;
+                        self.hyperdrive.write().await.initialize_content_feed(public_key)?;
+                        client.open(public_key.as_bytes().to_vec()).await?;
+                    }
+                }
+            };
         }
 
+        dbg!("tick - content");
+dbg!(self.content.is_some());
         if let Some(ref mut content) = &mut self.content {
-            dbg!("tick - content");
             dbg!(content.next().await);
         }
 
@@ -110,6 +131,7 @@ where
 
     async fn on_finish(&mut self, _client: &mut proto::Protocol<S, S>) {
         let driver = self.hyperdrive.read().await;
+
         let mut metadata = driver.metadata.write().await;
         log::debug!("Metadata audit: {:?}", metadata.audit().await);
         log::debug!("Metadata len: {:?}", metadata.len());

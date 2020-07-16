@@ -132,7 +132,14 @@ pub trait MessageObserver {
 }
 
 pub struct MessageDriver {
-    stream: Pin<Box<dyn futures::Stream<Item = proto::Message> + Send + 'static>>,
+    stream: Pin<Box<dyn futures::Stream<Item = Emit> + Send + 'static>>,
+}
+
+#[derive(Debug)]
+pub enum Emit {
+    Timeout,
+    OperationError,
+    Message(proto::Message),
 }
 
 impl MessageDriver {
@@ -148,14 +155,14 @@ impl MessageDriver {
                     observer.on_start(&mut channel).await.ok()?;
                 }
 
-                if error_count > 3 {
+                if error_count > 1 {
                     observer.on_finish(&mut channel).await;
                     return None;
                 }
 
-                let message = match channel.next().await {
-                    Some(e) => e,
-                    _ => return Some((None, (channel, observer, error_count, false))),
+                let message = match channel.next().timeout(Duration::from_micros(165)).await {
+                    Ok(Some(e)) => e,
+                    _ => return Some((Emit::Timeout, (channel, observer, error_count, false))),
                 };
 
                 let result = match dbg!(&message) {
@@ -191,13 +198,15 @@ impl MessageDriver {
 
                 if let Err(e) = result {
                     log::error!("Failed when dealing with event loop {:?}", e);
-                    return Some((None, (channel, observer, error_count + 1, false)));
+                    return Some((
+                        Emit::OperationError,
+                        (channel, observer, error_count + 1, false),
+                    ));
                 };
 
-                Some((Some(message), (channel, observer, 0, false)))
+                Some((Emit::Message(message), (channel, observer, 0, false)))
             },
         )
-        .filter_map(|i| async { i })
         .fuse();
 
         Self {
@@ -207,7 +216,7 @@ impl MessageDriver {
 }
 
 impl futures::Stream for MessageDriver {
-    type Item = proto::Message;
+    type Item = Emit;
     fn poll_next(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
@@ -295,20 +304,15 @@ impl EventDriver {
                     observer.on_start(&mut client).await.ok()?;
                 }
 
-                if error_count > 1 {
+                if error_count > 0 {
                     observer.on_finish(&mut client).await;
                     log::debug!("Error count reached maximum penalty. Bailing.");
                     return None;
                 }
 
-                let error_count = match observer
-                    .tick(&mut client)
-                    .timeout(Duration::from_micros(165))
-                    .await
-                {
-                    Ok(Ok(_)) => 0,
-                    Ok(Err(_)) => error_count + 1,
-                    Err(_) => error_count,
+                let error_count = match observer.tick(&mut client).await {
+                    Ok(_) => 0,
+                    Err(_) => error_count + 1,
                 };
 
                 // It seems like the channel only receives messages if loop_next is called
@@ -316,7 +320,7 @@ impl EventDriver {
                 // Interrupt the loop frequently to allow progress on other channels to happen
                 // Concern: finding the interrupt time correctly, as it could likely lead to data loss when moving the
                 // control message from the internal buffer to close the channel
-                let event = match dbg!(client.handle_next().await) {
+                let event = match client.handle_next().await {
                     Ok(Some(e)) => e,
                     Ok(None) => return Some(((), (client, observer, error_count, false))),
                     Err(_) => return Some(((), (client, observer, error_count + 1, false))),

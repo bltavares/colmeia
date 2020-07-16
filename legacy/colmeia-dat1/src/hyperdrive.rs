@@ -20,7 +20,7 @@ where
         + Send
         + Sync,
 {
-    pub fn readable_content_feed(
+    pub fn initialize_content_feed(
         &mut self,
         public_key: hypercore::PublicKey,
     ) -> anyhow::Result<Arc<RwLock<hypercore::Feed<Storage>>>> {
