@@ -361,7 +361,8 @@ dependencies = [
  "async-std",
  "async-trait",
  "bitfield-rle",
- "crossbeam-channel",
+ "colmeia-hypercore-utils",
+ "colmeia-hyperswarm-mdns",
  "ed25519-dalek",
  "futures",
  "hypercore",
@@ -369,6 +370,7 @@ dependencies = [
  "log",
  "protobuf",
  "protobuf-codegen-pure",
+ "random-access-disk",
  "random-access-memory",
  "random-access-storage",
 ]
@@ -418,16 +420,6 @@ name = "cpuid-bool"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d375c433320f6c5057ae04a04376eef4d04ce2801448cf8863a78da99107be4"
-
-[[package]]
-name = "crossbeam-channel"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cced8691919c02aac3cb0a1bc2e9b73d89e832bf9a06fc579d4e71b68a2da061"
-dependencies = [
- "crossbeam-utils",
- "maybe-uninit",
-]
 
 [[package]]
 name = "crossbeam-utils"
@@ -958,12 +950,6 @@ name = "matches"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
-
-[[package]]
-name = "maybe-uninit"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 
 [[package]]
 name = "memchr"

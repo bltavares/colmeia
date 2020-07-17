@@ -1,5 +1,5 @@
-use async_std::net::TcpStream;
-use std::net::SocketAddr;
+use async_std::{net::TcpStream, sync::RwLock};
+use std::{net::SocketAddr, sync::Arc};
 
 use colmeia_hypercore::*;
 use colmeia_hypercore_utils::{parse, UrlResolution};
@@ -44,10 +44,10 @@ fn main() {
 
         let client = hypercore_protocol::ProtocolBuilder::initiator().connect(tcp_stream);
 
-        let hyperdrive = in_memmory(*hash.public_key())
+        let hyperdrive = colmeia_hypercore::in_memmory(*hash.public_key())
             .await
             .expect("Invalid intialization");
-        let job = sync_hyperdrive(client, hyperdrive);
-        job.await;
+        let hyperdrive = Arc::new(RwLock::new(hyperdrive));
+        sync_hyperdrive(client, hyperdrive).await;
     });
 }

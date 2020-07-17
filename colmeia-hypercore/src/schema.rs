@@ -23,7 +23,7 @@
 /// of protobuf runtime.
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_16_2;
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Index {
     // message fields
     field_type: ::protobuf::SingularField<::std::string::String>,
@@ -45,7 +45,6 @@ impl Index {
     }
 
     // required string type = 1;
-
 
     pub fn get_field_type(&self) -> &str {
         match self.field_type.as_ref() {
@@ -77,11 +76,12 @@ impl Index {
 
     // Take field
     pub fn take_field_type(&mut self) -> ::std::string::String {
-        self.field_type.take().unwrap_or_else(|| ::std::string::String::new())
+        self.field_type
+            .take()
+            .unwrap_or_else(|| ::std::string::String::new())
     }
 
     // optional bytes content = 2;
-
 
     pub fn get_content(&self) -> &[u8] {
         match self.content.as_ref() {
@@ -113,7 +113,9 @@ impl Index {
 
     // Take field
     pub fn take_content(&mut self) -> ::std::vec::Vec<u8> {
-        self.content.take().unwrap_or_else(|| ::std::vec::Vec::new())
+        self.content
+            .take()
+            .unwrap_or_else(|| ::std::vec::Vec::new())
     }
 }
 
@@ -125,19 +127,27 @@ impl ::protobuf::Message for Index {
         true
     }
 
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn merge_from(
+        &mut self,
+        is: &mut ::protobuf::CodedInputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
                     ::protobuf::rt::read_singular_string_into(wire_type, is, &mut self.field_type)?;
-                },
+                }
                 2 => {
                     ::protobuf::rt::read_singular_bytes_into(wire_type, is, &mut self.content)?;
-                },
+                }
                 _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                    ::protobuf::rt::read_unknown_or_skip_group(
+                        field_number,
+                        wire_type,
+                        is,
+                        self.mut_unknown_fields(),
+                    )?;
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -158,7 +168,10 @@ impl ::protobuf::Message for Index {
         my_size
     }
 
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn write_to_with_cached_sizes(
+        &self,
+        os: &mut ::protobuf::CodedOutputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         if let Some(ref v) = self.field_type.as_ref() {
             os.write_string(1, &v)?;
         }
@@ -200,23 +213,34 @@ impl ::protobuf::Message for Index {
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> =
+            ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
-            fields.push(::protobuf::reflect::accessor::make_singular_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
-                "type",
-                |m: &Index| { &m.field_type },
-                |m: &mut Index| { &mut m.field_type },
-            ));
-            fields.push(::protobuf::reflect::accessor::make_singular_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                "content",
-                |m: &Index| { &m.content },
-                |m: &mut Index| { &mut m.content },
-            ));
+            fields.push(
+                ::protobuf::reflect::accessor::make_singular_field_accessor::<
+                    _,
+                    ::protobuf::types::ProtobufTypeString,
+                >(
+                    "type",
+                    |m: &Index| &m.field_type,
+                    |m: &mut Index| &mut m.field_type,
+                ),
+            );
+            fields.push(
+                ::protobuf::reflect::accessor::make_singular_field_accessor::<
+                    _,
+                    ::protobuf::types::ProtobufTypeBytes,
+                >(
+                    "content",
+                    |m: &Index| &m.content,
+                    |m: &mut Index| &mut m.content,
+                ),
+            );
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<Index>(
                 "Index",
                 fields,
-                file_descriptor_proto()
+                file_descriptor_proto(),
             )
         })
     }
@@ -247,7 +271,7 @@ impl ::protobuf::reflect::ProtobufValue for Index {
     }
 }
 
-#[derive(PartialEq,Clone,Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct Stat {
     // message fields
     mode: ::std::option::Option<u32>,
@@ -277,7 +301,6 @@ impl Stat {
 
     // required uint32 mode = 1;
 
-
     pub fn get_mode(&self) -> u32 {
         self.mode.unwrap_or(0)
     }
@@ -295,7 +318,6 @@ impl Stat {
     }
 
     // optional uint32 uid = 2;
-
 
     pub fn get_uid(&self) -> u32 {
         self.uid.unwrap_or(0)
@@ -315,7 +337,6 @@ impl Stat {
 
     // optional uint32 gid = 3;
 
-
     pub fn get_gid(&self) -> u32 {
         self.gid.unwrap_or(0)
     }
@@ -333,7 +354,6 @@ impl Stat {
     }
 
     // optional uint64 size = 4;
-
 
     pub fn get_size(&self) -> u64 {
         self.size.unwrap_or(0)
@@ -353,7 +373,6 @@ impl Stat {
 
     // optional uint64 blocks = 5;
 
-
     pub fn get_blocks(&self) -> u64 {
         self.blocks.unwrap_or(0)
     }
@@ -371,7 +390,6 @@ impl Stat {
     }
 
     // optional uint64 offset = 6;
-
 
     pub fn get_offset(&self) -> u64 {
         self.offset.unwrap_or(0)
@@ -391,7 +409,6 @@ impl Stat {
 
     // optional uint64 byteOffset = 7;
 
-
     pub fn get_byteOffset(&self) -> u64 {
         self.byteOffset.unwrap_or(0)
     }
@@ -410,7 +427,6 @@ impl Stat {
 
     // optional uint64 mtime = 8;
 
-
     pub fn get_mtime(&self) -> u64 {
         self.mtime.unwrap_or(0)
     }
@@ -428,7 +444,6 @@ impl Stat {
     }
 
     // optional uint64 ctime = 9;
-
 
     pub fn get_ctime(&self) -> u64 {
         self.ctime.unwrap_or(0)
@@ -455,76 +470,102 @@ impl ::protobuf::Message for Stat {
         true
     }
 
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn merge_from(
+        &mut self,
+        is: &mut ::protobuf::CodedInputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint32()?;
                     self.mode = ::std::option::Option::Some(tmp);
-                },
+                }
                 2 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint32()?;
                     self.uid = ::std::option::Option::Some(tmp);
-                },
+                }
                 3 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint32()?;
                     self.gid = ::std::option::Option::Some(tmp);
-                },
+                }
                 4 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.size = ::std::option::Option::Some(tmp);
-                },
+                }
                 5 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.blocks = ::std::option::Option::Some(tmp);
-                },
+                }
                 6 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.offset = ::std::option::Option::Some(tmp);
-                },
+                }
                 7 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.byteOffset = ::std::option::Option::Some(tmp);
-                },
+                }
                 8 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.mtime = ::std::option::Option::Some(tmp);
-                },
+                }
                 9 => {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
-                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(
+                            wire_type,
+                        ));
                     }
                     let tmp = is.read_uint64()?;
                     self.ctime = ::std::option::Option::Some(tmp);
-                },
+                }
                 _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
+                    ::protobuf::rt::read_unknown_or_skip_group(
+                        field_number,
+                        wire_type,
+                        is,
+                        self.mut_unknown_fields(),
+                    )?;
+                }
             };
         }
         ::std::result::Result::Ok(())
@@ -566,7 +607,10 @@ impl ::protobuf::Message for Stat {
         my_size
     }
 
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+    fn write_to_with_cached_sizes(
+        &self,
+        os: &mut ::protobuf::CodedOutputStream<'_>,
+    ) -> ::protobuf::ProtobufResult<()> {
         if let Some(v) = self.mode {
             os.write_uint32(1, v)?;
         }
@@ -629,58 +673,74 @@ impl ::protobuf::Message for Stat {
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> =
+            ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
-                "mode",
-                |m: &Stat| { &m.mode },
-                |m: &mut Stat| { &mut m.mode },
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint32,
+            >(
+                "mode", |m: &Stat| &m.mode, |m: &mut Stat| &mut m.mode
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
-                "uid",
-                |m: &Stat| { &m.uid },
-                |m: &mut Stat| { &mut m.uid },
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint32,
+            >(
+                "uid", |m: &Stat| &m.uid, |m: &mut Stat| &mut m.uid
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
-                "gid",
-                |m: &Stat| { &m.gid },
-                |m: &mut Stat| { &mut m.gid },
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint32,
+            >(
+                "gid", |m: &Stat| &m.gid, |m: &mut Stat| &mut m.gid
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                "size",
-                |m: &Stat| { &m.size },
-                |m: &mut Stat| { &mut m.size },
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint64,
+            >(
+                "size", |m: &Stat| &m.size, |m: &mut Stat| &mut m.size
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint64,
+            >(
                 "blocks",
-                |m: &Stat| { &m.blocks },
-                |m: &mut Stat| { &mut m.blocks },
+                |m: &Stat| &m.blocks,
+                |m: &mut Stat| &mut m.blocks,
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint64,
+            >(
                 "offset",
-                |m: &Stat| { &m.offset },
-                |m: &mut Stat| { &mut m.offset },
+                |m: &Stat| &m.offset,
+                |m: &mut Stat| &mut m.offset,
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint64,
+            >(
                 "byteOffset",
-                |m: &Stat| { &m.byteOffset },
-                |m: &mut Stat| { &mut m.byteOffset },
+                |m: &Stat| &m.byteOffset,
+                |m: &mut Stat| &mut m.byteOffset,
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                "mtime",
-                |m: &Stat| { &m.mtime },
-                |m: &mut Stat| { &mut m.mtime },
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint64,
+            >(
+                "mtime", |m: &Stat| &m.mtime, |m: &mut Stat| &mut m.mtime
             ));
-            fields.push(::protobuf::reflect::accessor::make_option_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
-                "ctime",
-                |m: &Stat| { &m.ctime },
-                |m: &mut Stat| { &mut m.ctime },
+            fields.push(::protobuf::reflect::accessor::make_option_accessor::<
+                _,
+                ::protobuf::types::ProtobufTypeUint64,
+            >(
+                "ctime", |m: &Stat| &m.ctime, |m: &mut Stat| &mut m.ctime
             ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<Stat>(
                 "Stat",
                 fields,
-                file_descriptor_proto()
+                file_descriptor_proto(),
             )
         })
     }
@@ -729,14 +789,14 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     me\x18\t\x20\x01(\x04B\0:\0B\0b\x06proto2\
 ";
 
-static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;
+static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<
+    ::protobuf::descriptor::FileDescriptorProto,
+> = ::protobuf::rt::LazyV2::INIT;
 
 fn parse_descriptor_proto() -> ::protobuf::descriptor::FileDescriptorProto {
     ::protobuf::parse_from_bytes(file_descriptor_proto_data).unwrap()
 }
 
 pub fn file_descriptor_proto() -> &'static ::protobuf::descriptor::FileDescriptorProto {
-    file_descriptor_proto_lazy.get(|| {
-        parse_descriptor_proto()
-    })
+    file_descriptor_proto_lazy.get(|| parse_descriptor_proto())
 }
