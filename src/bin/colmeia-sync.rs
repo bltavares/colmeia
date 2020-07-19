@@ -1,6 +1,5 @@
 use async_std::task;
 use colmeia_hypercore::*;
-use colmeia_hypercore_utils::{parse, UrlResolution};
 
 fn name() -> String {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -18,16 +17,10 @@ fn main() {
     env_logger::init();
 
     let key = name();
+    let hash = key.parse_from_hash().expect("invalid dat argument");
 
     // let path = name();
     task::block_on(async {
-        let hash = parse(&key).expect("invalid dat argument");
-
-        let hash = match hash {
-            UrlResolution::HashUrl(result) => result,
-            _ => panic!("invalid hash key"),
-        };
-
         let mut hyperstack = Hyperstack::in_memory(hash, "0.0.0.0:3899".parse().unwrap())
             .await
             .expect("Could not start hyperdrive on the stack");

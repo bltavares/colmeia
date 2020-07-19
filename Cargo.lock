@@ -345,8 +345,8 @@ dependencies = [
  "anyhow",
  "async-std",
  "colmeia-hypercore",
- "colmeia-hypercore-utils",
  "colmeia-hyperswarm-mdns",
+ "ed25519-dalek",
  "env_logger",
  "futures",
  "hex",
@@ -361,10 +361,10 @@ dependencies = [
  "async-std",
  "async-trait",
  "bitfield-rle",
- "colmeia-hypercore-utils",
  "colmeia-hyperswarm-mdns",
  "ed25519-dalek",
  "futures",
+ "hex",
  "hypercore",
  "hypercore-protocol",
  "log",
@@ -373,16 +373,7 @@ dependencies = [
  "random-access-disk",
  "random-access-memory",
  "random-access-storage",
-]
-
-[[package]]
-name = "colmeia-hypercore-utils"
-version = "0.1.0"
-dependencies = [
- "blake2-rfc",
- "ed25519-dalek",
- "hex",
- "parse-dat-url",
+ "thiserror",
 ]
 
 [[package]]
@@ -1090,18 +1081,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efcee3c6d23b94012e240525f131c6abaa9e5eeb8f211002d93beec3b7be350"
 
 [[package]]
-name = "parse-dat-url"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e258f91a60aa835631d1e6323e89ab1e466b582917775c6652f314a9dc693e02"
-dependencies = [
- "lazy_static",
- "regex",
- "serde",
- "url",
-]
-
-[[package]]
 name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1461,12 +1440,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
 
 [[package]]
-name = "serde"
-version = "1.0.114"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5317f7588f0a5078ee60ef675ef96735a1442132dc645eb1d12c018620ed8cd3"
-
-[[package]]
 name = "sha2"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1644,18 +1617,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.19"
+version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b13f926965ad00595dd129fa12823b04bbf866e9085ab0a5f2b05b850fbfc344"
+checksum = "7dfdd070ccd8ccb78f4ad66bf1982dc37f620ef696c6b5028fe2ed83dd3d0d08"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.19"
+version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "893582086c2f98cde18f906265a65b5030a074b1046c674ae898be6519a7f479"
+checksum = "bd80fc12f73063ac132ac92aceea36734f04a1d93c1240c6944e23a3b8841793"
 dependencies = [
  "proc-macro2",
  "quote",

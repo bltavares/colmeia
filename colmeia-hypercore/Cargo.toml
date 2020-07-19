@@ -16,9 +16,8 @@ async-trait = '0.1.36'
 log = '0.4.8'
 bitfield-rle = '0.2.0'
 protobuf = '2.10.1'
-
-[dependencies.colmeia-hypercore-utils]
-path = '../colmeia-hypercore-utils'
+hex = '0.4.2'
+thiserror = '1.0.20'
 
 [dependencies.colmeia-hyperswarm-mdns]
 path = '../colmeia-hyperswarm-mdns'

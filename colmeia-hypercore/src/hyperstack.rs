@@ -9,7 +9,7 @@ use async_std::{
     sync::RwLock,
     task,
 };
-use colmeia_hypercore_utils::HashUrl;
+use ed25519_dalek::PublicKey;
 use futures::{stream, Stream, StreamExt};
 use hypercore_protocol::ProtocolBuilder;
 use std::{collections::HashSet, net::SocketAddr, sync::Arc, time::Duration};
@@ -22,7 +22,7 @@ where
         + Sync
         + 'static,
 {
-    key: HashUrl,
+    key: PublicKey,
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
     connected_peers: Arc<RwLock<HashSet<SocketAddr>>>,
     listen_address: SocketAddr,
@@ -49,8 +49,8 @@ impl Hyperstack<random_access_disk::RandomAccessDisk> {
 }
 
 impl Hyperstack<random_access_memory::RandomAccessMemory> {
-    pub async fn in_memory(key: HashUrl, listen_address: SocketAddr) -> anyhow::Result<Self> {
-        let hyperdrive = hyperdrive::in_memmory(*key.public_key()).await?;
+    pub async fn in_memory(key: PublicKey, listen_address: SocketAddr) -> anyhow::Result<Self> {
+        let hyperdrive = hyperdrive::in_memmory(key).await?;
         Ok(Self {
             key,
             listen_address,
@@ -69,8 +69,9 @@ where
         + Sync,
 {
     pub fn lan(&self) -> impl Stream<Item = SocketAddr> {
-        let mut mdns =
-            colmeia_hyperswarm_mdns::MdnsDiscovery::new(self.key.discovery_key().to_vec());
+        let mut mdns = colmeia_hyperswarm_mdns::MdnsDiscovery::new(
+            hypercore_protocol::discovery_key(self.key.as_bytes()),
+        );
         mdns.with_announcer(self.listen_address.port())
             .with_locator(Duration::from_secs(60));
         mdns
