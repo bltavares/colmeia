@@ -1,6 +1,6 @@
 use crate::{
     hyperdrive::{self, Hyperdrive},
-    sync_hyperdrive,
+    replicate_hyperdrive,
 };
 use anyhow::Context;
 use async_std::{
@@ -87,7 +87,7 @@ where
 
     // TODO Move this method into a HypercoreExt trait?
     // TODO Allow access to the hypercore, so we can spanw the sync and keep using the hyperdrives
-    pub async fn sync(self) {
+    pub async fn replicate(self) {
         let driver = self.hyperdrive.clone();
         let connected_peers = self.connected_peers.clone();
 
@@ -102,7 +102,7 @@ where
                         if let Ok(tcp_stream) = TcpStream::connect(peer).await {
                             connected_peers.write().await.insert(peer);
                             let client = ProtocolBuilder::new(true).connect(tcp_stream);
-                            sync_hyperdrive(client, driver.clone()).await;
+                            replicate_hyperdrive(client, driver.clone()).await;
                             connected_peers.write().await.remove(&peer);
                         }
                     });
@@ -129,7 +129,7 @@ where
                                 log::debug!("Received connection from {:?}", remote_addrs);
                                 connected_peers.write().await.insert(remote_addrs);
                                 let client = ProtocolBuilder::new(false).connect(tcp_stream);
-                                sync_hyperdrive(client, driver.clone()).await;
+                                replicate_hyperdrive(client, driver.clone()).await;
                                 connected_peers.write().await.remove(&remote_addrs);
                             });
                         }

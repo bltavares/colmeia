@@ -26,6 +26,6 @@ fn main() {
             .expect("Could not start hyperdrive on the stack");
         hyperstack.with_discovery(hyperstack.lan());
 
-        hyperstack.sync().await;
+        hyperstack.replicate().await;
     });
 }

@@ -42,6 +42,6 @@ fn main() {
             .await
             .expect("Invalid intialization");
         let hyperdrive = Arc::new(RwLock::new(hyperdrive));
-        sync_hyperdrive(client, hyperdrive).await;
+        replicate_hyperdrive(client, hyperdrive).await;
     });
 }

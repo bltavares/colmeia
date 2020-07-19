@@ -13,7 +13,7 @@ pub enum Emit {
     OnData,
 }
 
-pub async fn sync_channel<Storage>(
+pub async fn replicate_channel<Storage>(
     mut channel: proto::Channel,
     feed: Arc<RwLock<hypercore::Feed<Storage>>>,
     mut rx: impl futures::Sink<Emit> + Unpin + Send + 'static,
@@ -166,7 +166,7 @@ enum JobHolder {
     Job(async_std::task::JoinHandle<anyhow::Result<()>>),
 }
 
-pub async fn sync_hyperdrive<C, Storage>(
+pub async fn replicate_hyperdrive<C, Storage>(
     mut client: proto::Protocol<C, C>,
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
 ) where
@@ -219,7 +219,7 @@ pub async fn sync_hyperdrive<C, Storage>(
                 if let Some(JobHolder::Sender(sender)) = metadata_job.take() {
                     log::debug!("initializing metadata feed");
                     let feed = hyperdrive.read().await.metadata.clone();
-                    metadata_job = Some(JobHolder::Job(task::spawn(sync_channel(
+                    metadata_job = Some(JobHolder::Job(task::spawn(replicate_channel(
                         channel, feed, sender,
                     ))));
                     continue;
@@ -228,7 +228,7 @@ pub async fn sync_hyperdrive<C, Storage>(
                     log::debug!("initializing content feed");
                     let feed = hyperdrive.read().await.content.clone();
                     if let Some(feed) = feed {
-                        content_job = Some(JobHolder::Job(task::spawn(sync_channel(
+                        content_job = Some(JobHolder::Job(task::spawn(replicate_channel(
                             channel, feed, sender,
                         ))));
                     }
