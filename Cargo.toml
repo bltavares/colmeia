@@ -8,6 +8,7 @@ edition = '2018'
 members = [
     'colmeia-hyperswarm-mdns',
     'colmeia-hypercore',
+    'colmeiad',
 ]
 
 [dependencies]
@@ -15,7 +16,7 @@ futures = '*'
 env_logger = '*'
 hex = '*'
 anyhow = '*'
-ed25519-dalek = '1.0.0-pre.3'
+ed25519-dalek = '=1.0.0-pre.3'
 
 [dependencies.async-std]
 version = '1.6.2'

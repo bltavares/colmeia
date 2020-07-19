@@ -10,8 +10,8 @@ where
         + Send
         + Sync,
 {
-    pub(crate) metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
-    pub(crate) content: Option<Arc<RwLock<hypercore::Feed<Storage>>>>,
+    pub metadata: Arc<RwLock<hypercore::Feed<Storage>>>,
+    pub content: Option<Arc<RwLock<hypercore::Feed<Storage>>>>,
     content_storage: Option<hypercore::Storage<Storage>>,
 }
 
@@ -22,13 +22,14 @@ where
         + Send
         + Sync,
 {
-    pub fn initialize_content_feed(
+    pub async fn initialize_content_feed(
         &mut self,
         public_key: hypercore::PublicKey,
     ) -> anyhow::Result<Arc<RwLock<hypercore::Feed<Storage>>>> {
         if let Some(storage) = self.content_storage.take() {
             let feed = hypercore::Feed::builder(public_key, storage)
                 .build()
+                .await
                 .context("Could not start hypercore feed")?;
 
             self.content = Some(Arc::new(RwLock::new(feed)));
@@ -48,6 +49,7 @@ pub async fn in_memmory(
             .context("could not page feed memory")?,
     )
     .build()
+    .await
     .context("Could not start feed")?;
 
     let content_storage = hypercore::Storage::new_memory()

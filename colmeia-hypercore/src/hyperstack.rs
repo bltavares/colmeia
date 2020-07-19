@@ -10,7 +10,7 @@ use async_std::{
     task,
 };
 use ed25519_dalek::PublicKey;
-use futures::{stream, Stream, StreamExt};
+use futures::{Future, Stream, StreamExt};
 use hypercore_protocol::ProtocolBuilder;
 use std::{collections::HashSet, net::SocketAddr, sync::Arc, time::Duration};
 
@@ -26,7 +26,7 @@ where
     hyperdrive: Arc<RwLock<Hyperdrive<Storage>>>,
     connected_peers: Arc<RwLock<HashSet<SocketAddr>>>,
     listen_address: SocketAddr,
-    discovery: Box<dyn Stream<Item = SocketAddr> + Unpin + Send>,
+    discovery: Option<Box<dyn Stream<Item = SocketAddr> + Unpin + Send>>,
 }
 
 impl Hyperstack<random_access_disk::RandomAccessDisk> {
@@ -56,7 +56,7 @@ impl Hyperstack<random_access_memory::RandomAccessMemory> {
             listen_address,
             connected_peers: Arc::new(RwLock::new(HashSet::new())),
             hyperdrive: Arc::new(RwLock::new(hyperdrive)),
-            discovery: Box::new(stream::empty()),
+            discovery: None,
         })
     }
 }
@@ -81,65 +81,74 @@ where
         &mut self,
         mechanisms: impl Stream<Item = SocketAddr> + Unpin + 'static + Send,
     ) -> &mut Self {
-        self.discovery = Box::new(mechanisms);
+        self.discovery = Some(Box::new(mechanisms));
         self
+    }
+
+    pub fn hyperdrive(&self) -> Arc<RwLock<Hyperdrive<Storage>>> {
+        self.hyperdrive.clone()
     }
 
     // TODO Move this method into a HypercoreExt trait?
     // TODO Allow access to the hypercore, so we can spanw the sync and keep using the hyperdrives
-    pub async fn replicate(self) {
-        let driver = self.hyperdrive.clone();
-        let connected_peers = self.connected_peers.clone();
-
-        let mut discovery = self.discovery;
-        let discovery = task::spawn(async move {
-            while let Some(peer) = discovery.next().await {
-                if !connected_peers.read().await.contains(&peer) {
-                    let driver = driver.clone();
-                    let connected_peers = connected_peers.clone();
-
-                    task::spawn(async move {
-                        if let Ok(tcp_stream) = TcpStream::connect(peer).await {
-                            connected_peers.write().await.insert(peer);
-                            let client = ProtocolBuilder::new(true).connect(tcp_stream);
-                            replicate_hyperdrive(client, driver.clone()).await;
-                            connected_peers.write().await.remove(&peer);
-                        }
-                    });
-                }
-            }
-        });
+    pub fn replicate(&mut self) -> impl Future<Output = ()> + 'static {
+        let discovery_driver = self.hyperdrive.clone();
+        let discovery_connected_peers = self.connected_peers.clone();
+        let discovery = self.discovery.take();
 
         let listen_address = self.listen_address;
-        let driver = self.hyperdrive.clone();
-        let connected_peers = self.connected_peers.clone();
+        let listen_driver = self.hyperdrive.clone();
+        let listen_connected_peers = self.connected_peers.clone();
 
-        let listening = task::spawn(async move {
-            let listener = TcpListener::bind(listen_address)
-                .await
-                .context("could not bind server to the address");
+        async move {
+            let discovery = match discovery {
+                Some(mut discovery) => task::spawn(async move {
+                    while let Some(peer) = discovery.next().await {
+                        if !discovery_connected_peers.read().await.contains(&peer) {
+                            let driver = discovery_driver.clone();
+                            let connected_peers = discovery_connected_peers.clone();
 
-            if let Ok(listener) = listener {
-                loop {
-                    if let Ok((tcp_stream, remote_addrs)) = listener.accept().await {
-                        let driver = driver.clone();
-                        let connected_peers = connected_peers.clone();
-                        if !connected_peers.read().await.contains(&remote_addrs) {
                             task::spawn(async move {
-                                log::debug!("Received connection from {:?}", remote_addrs);
-                                connected_peers.write().await.insert(remote_addrs);
-                                let client = ProtocolBuilder::new(false).connect(tcp_stream);
-                                replicate_hyperdrive(client, driver.clone()).await;
-                                connected_peers.write().await.remove(&remote_addrs);
+                                if let Ok(tcp_stream) = TcpStream::connect(peer).await {
+                                    connected_peers.write().await.insert(peer);
+                                    let client = ProtocolBuilder::new(true).connect(tcp_stream);
+                                    replicate_hyperdrive(client, driver.clone()).await;
+                                    connected_peers.write().await.remove(&peer);
+                                }
                             });
                         }
                     }
-                }
-            } else {
-                log::error!("Error when creating listener {:?}", listener);
-            }
-        });
+                }),
+                None => task::spawn(async {}),
+            };
 
-        listening.join(discovery).await;
+            let listening = task::spawn(async move {
+                let listener = TcpListener::bind(listen_address)
+                    .await
+                    .context("could not bind server to the address");
+
+                if let Ok(listener) = listener {
+                    loop {
+                        if let Ok((tcp_stream, remote_addrs)) = listener.accept().await {
+                            let driver = listen_driver.clone();
+                            let connected_peers = listen_connected_peers.clone();
+                            if !connected_peers.read().await.contains(&remote_addrs) {
+                                task::spawn(async move {
+                                    log::debug!("Received connection from {:?}", remote_addrs);
+                                    connected_peers.write().await.insert(remote_addrs);
+                                    let client = ProtocolBuilder::new(false).connect(tcp_stream);
+                                    replicate_hyperdrive(client, driver.clone()).await;
+                                    connected_peers.write().await.remove(&remote_addrs);
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    log::error!("Error when creating listener {:?}", listener);
+                }
+            });
+
+            listening.join(discovery).await;
+        }
     }
 }

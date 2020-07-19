@@ -28,23 +28,21 @@ where
     let mut remote_length = 0;
 
     while let Some(message) = channel.next().await {
-        match dbg!(message) {
+        match message {
             proto::Message::Open(_) => {
                 let status = proto::schema::Status {
                     downloading: Some(true),
                     uploading: Some(false), // TODO what to do here
                 };
-                channel.status(dbg!(status)).await?;
+                channel.status(status).await?;
 
                 let want = proto::schema::Want {
                     start: 0,
                     length: None, // must be in sizes of 8192 bytes
                 };
-                channel.want(dbg!(want)).await?;
+                channel.want(want).await?;
             }
             proto::Message::Data(message) => {
-                dbg!("received data");
-
                 let proof = hypercore::Proof {
                     index: message.index,
                     nodes: message
@@ -71,7 +69,6 @@ where
                     .map_err(|_| anyhow::anyhow!("failed to emit ondata"))?;
             }
             proto::Message::Have(message) => {
-                dbg!("received have");
                 // TODO implement setting the length and request data on metadata
                 if let Some(ref bitfield) = message.bitfield {
                     let buf = bitfield_rle::decode(bitfield)
@@ -110,11 +107,10 @@ where
                         index,
                         ..Default::default()
                     };
-                    dbg!(channel.request(dbg!(request)).await?);
+                    channel.request(request).await?;
                 }
             }
             proto::Message::Want(message) => {
-                dbg!("Received want");
                 // We only reploy to multiple of 8192 in terms of offsets and lengths for want messages
                 // since this is much easier for the bitfield, in terms of paging.
                 if (message.start & 8191 != 0) || (message.length.unwrap_or(0) & 8191 != 0) {
@@ -184,7 +180,6 @@ pub async fn replicate_hyperdrive<C, Storage>(
     let mut content_job = Some(JobHolder::Sender(content_sender));
 
     loop {
-        dbg!("start loop");
         let (event, _, _) = futures::future::select_all(vec![
             client.loop_next().map(HyperdriveEvents::Client).boxed(),
             metadata_receiver
@@ -198,7 +193,7 @@ pub async fn replicate_hyperdrive<C, Storage>(
         ])
         .await;
 
-        match dbg!(event) {
+        match event {
             HyperdriveEvents::Client(Ok(proto::Event::DiscoveryKey(message))) => {
                 if let Some(JobHolder::Sender(_)) = &metadata_job {
                     let drive = hyperdrive.read().await;
@@ -254,8 +249,6 @@ pub async fn replicate_hyperdrive<C, Storage>(
             // TODO listen to metadata ondata evnt to initialize content feed
             HyperdriveEvents::Metadata(_) => {
                 if let Some(JobHolder::Sender(_)) = &content_job {
-                    dbg!("metadata on data");
-
                     // Initialize the content feed if we have no job started
                     let initial_metadata = {
                         let driver = hyperdrive.read().await;
@@ -284,7 +277,8 @@ pub async fn replicate_hyperdrive<C, Storage>(
                         if hyperdrive
                             .write()
                             .await
-                            .initialize_content_feed(dbg!(public_key))
+                            .initialize_content_feed(public_key)
+                            .await
                             .is_ok()
                             && client.open(public_key.as_bytes().to_vec()).await.is_err()
                         {
@@ -296,6 +290,5 @@ pub async fn replicate_hyperdrive<C, Storage>(
             }
             _ => {}
         };
-        dbg!("here");
     }
 }

@@ -33,7 +33,6 @@ fn main() {
         let mut stream = proto::ProtocolBuilder::initiator().connect(tcp_stream);
 
         while let Ok(event) = stream.loop_next().await {
-            dbg!(&event);
             match event {
                 proto::Event::Handshake(_) => {
                     stream
