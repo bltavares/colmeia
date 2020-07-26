@@ -1,5 +1,5 @@
 use anyhow::Context as ErrContext;
-use futures::Stream;
+use futures::{stream::StreamExt, Stream};
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -45,7 +45,6 @@ fn hash_as_domain_name(hash: &[u8]) -> anyhow::Result<Name> {
         .context("could not create hyperswarm dns name from provided hash")
 }
 
-type OwnedSelfId = [Box<[u8]>; 1];
 type SelfId<'a> = &'a [Box<[u8]>];
 
 pub fn self_id() -> String {
@@ -55,16 +54,14 @@ pub fn self_id() -> String {
 }
 
 pub struct MdnsDiscovery {
-    hypercore_topic: Vec<u8>,
     self_id: String,
     announce: Option<announcer::Announcer>,
     locate: Option<locator::Locator>,
 }
 
 impl MdnsDiscovery {
-    pub fn new(hypercore_topic: Vec<u8>) -> Self {
+    pub fn new() -> Self {
         Self {
-            hypercore_topic,
             self_id: self_id(),
             announce: None,
             locate: None,
@@ -73,16 +70,7 @@ impl MdnsDiscovery {
 
     pub fn with_locator(&mut self, duration: Duration) -> &mut Self {
         self.locate = crate::socket::create()
-            .map_err(anyhow::Error::from)
-            .and_then(|socket| {
-                locator::Locator::with_identifier(
-                    socket,
-                    &self.hypercore_topic,
-                    self.self_id.clone(),
-                    duration,
-                )
-            })
-            .map_err(|err| log::debug!("Location err: {:?}", err))
+            .map(|socket| locator::Locator::listen(socket, duration, self.self_id.as_bytes()))
             .ok();
         self
     }
@@ -90,17 +78,29 @@ impl MdnsDiscovery {
     pub fn with_announcer(&mut self, port: u16) -> &mut Self {
         self.announce = crate::socket::create()
             .map_err(anyhow::Error::from)
-            .and_then(|socket| {
-                announcer::Announcer::with_identifier(
-                    socket,
-                    &self.hypercore_topic,
-                    port,
-                    self.self_id.clone(),
-                )
-            })
-            .map_err(|err| log::debug!("Announcer err: {:?}", err))
+            .map(|socket| announcer::Announcer::listen(socket, port, self.self_id.clone()))
             .ok();
         self
+    }
+
+    pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
+        if let Some(announcer) = &self.announce {
+            announcer.add_topic(topic).await?;
+        }
+        if let Some(locator) = &self.locate {
+            locator.add_topic(topic).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
+        if let Some(announcer) = &self.announce {
+            announcer.remove_topic(topic).await?;
+        }
+        if let Some(locator) = &self.locate {
+            locator.remove_topic(topic).await?;
+        }
+        Ok(())
     }
 }
 
@@ -108,7 +108,6 @@ impl Stream for MdnsDiscovery {
     type Item = SocketAddr;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        use futures::stream::StreamExt;
 
         if let Some(ref mut announcer) = &mut self.announce {
             let _ = announcer.poll_next_unpin(cx);

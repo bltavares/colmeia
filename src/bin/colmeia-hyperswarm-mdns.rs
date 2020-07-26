@@ -1,8 +1,8 @@
-use async_std::{prelude::StreamExt, task};
+use async_std::{prelude::StreamExt, sync::RwLock, task};
 use colmeia_hypercore::PublicKeyExt;
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
 use std::env;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 // 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5
 // pra
@@ -30,12 +30,45 @@ fn main() {
     let key = hyper_hash.parse_from_hash().expect("could not parse hash");
 
     task::block_on(async move {
-        let mut mdns = MdnsDiscovery::new(hypercore_protocol::discovery_key(key.as_bytes()));
-        mdns.with_announcer(port)
+        let mdns = Arc::new(RwLock::new(MdnsDiscovery::new()));
+        let topic = hypercore_protocol::discovery_key(key.as_bytes());
+        mdns.write()
+            .await
+            .with_announcer(port)
             .with_locator(Duration::from_secs(duration));
 
-        while let Some(packet) = mdns.next().await {
-            println!("Found peer on {:?}", packet);
+        // Spawn a task to print a topic
+        {
+            let mdns = mdns.clone();
+            task::spawn(async move {
+                while let Some(packet) = mdns.write().await.next().await {
+                    println!("Found peer on {:?}", packet);
+                }
+            });
         }
+
+        // Spawn a task to add a topic
+        {
+            let mdns = mdns.clone();
+            let topic = topic.clone();
+            task::spawn(async move {
+                mdns.write()
+                    .await
+                    .add_topic(&topic)
+                    .await
+                    .expect("could not write topic");
+            });
+        }
+
+        // Spawn a task to remove a topic after 30 secs, then finish the program
+        task::spawn(async move {
+            task::sleep(Duration::from_secs(30)).await;
+            mdns.write()
+                .await
+                .remove_topic(&topic)
+                .await
+                .expect("failed to remove topic");
+        })
+        .await;
     });
 }

@@ -61,6 +61,8 @@ impl Hyperstack<random_access_memory::RandomAccessMemory> {
     }
 }
 
+// TODO add_topic and remove_topic
+// TODO handle multiple feeds
 impl<Storage> Hyperstack<Storage>
 where
     Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
@@ -68,13 +70,13 @@ where
         + Send
         + Sync,
 {
-    pub fn lan(&self) -> impl Stream<Item = SocketAddr> {
-        let mut mdns = colmeia_hyperswarm_mdns::MdnsDiscovery::new(
-            hypercore_protocol::discovery_key(self.key.as_bytes()),
-        );
+    pub async fn lan(&self) -> anyhow::Result<impl Stream<Item = SocketAddr>> {
+        let mut mdns = colmeia_hyperswarm_mdns::MdnsDiscovery::new();
         mdns.with_announcer(self.listen_address.port())
             .with_locator(Duration::from_secs(60));
-        mdns
+        mdns.add_topic(&hypercore_protocol::discovery_key(self.key.as_bytes()))
+            .await?;
+        Ok(mdns)
     }
 
     pub fn with_discovery(

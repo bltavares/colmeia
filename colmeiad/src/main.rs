@@ -73,7 +73,11 @@ async fn main() -> Result<(), std::io::Error> {
     let mut hyperstack = Hyperstack::in_memory(hash, "0.0.0.0:3899".parse().unwrap())
         .await
         .expect("Could not start hyperdrive on the stack");
-    hyperstack.with_discovery(hyperstack.lan());
+    let mdns = hyperstack
+        .lan()
+        .await
+        .expect("could not add key to mdns discovery");
+    hyperstack.with_discovery(mdns);
 
     let job = task::spawn(hyperstack.replicate());
     let hyperdrive = hyperstack.hyperdrive();

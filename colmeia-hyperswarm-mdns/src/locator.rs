@@ -1,12 +1,11 @@
 use anyhow::Context;
-use async_std::stream::StreamExt;
-use async_std::task;
-use futures::{stream, Stream};
+use async_std::{sync::RwLock, task};
+use futures::{SinkExt, Stream, StreamExt};
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
+use std::{collections::HashSet, time::Duration};
 use trust_dns_proto::op::{Message, MessageType, Query};
 use trust_dns_proto::rr::{Name, RData, RecordType};
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
@@ -47,72 +46,94 @@ async fn wait_response(
 }
 
 pub struct Locator {
-    broadcast_stream: Pin<Box<dyn Stream<Item = ()> + Send>>,
-    response_stream: Pin<Box<dyn Stream<Item = SocketAddr> + Send>>,
+    topics: Arc<RwLock<HashSet<Name>>>,
+    _listen_task: task::JoinHandle<()>,
+    _broadcast_task: task::JoinHandle<()>,
+    stream: Box<dyn Stream<Item = SocketAddr> + Unpin + Send + Sync>,
 }
 
 impl Locator {
-    pub fn new(
+    pub fn listen(
         socket: multicast_socket::MulticastSocket,
-        hash: &[u8],
-        announcement_window: Duration,
-    ) -> anyhow::Result<Self> {
-        Locator::with_identifier(socket, hash, crate::self_id(), announcement_window)
+        duration: Duration,
+        self_id: &[u8],
+    ) -> Self {
+        let topics: Arc<RwLock<HashSet<Name>>> = Default::default();
+        let socket = Arc::new(socket);
+
+        let broadcast_task = {
+            let topics = topics.clone();
+            let socket = socket.clone();
+
+            task::spawn(async move {
+                loop {
+                    for topic in topics.read().await.iter() {
+                        let broadcast_result = broadcast(topic.clone(), socket.clone()).await;
+                        if let Err(problem) = broadcast_result {
+                            log::warn!(
+                                "failed to broadcast a packet. trying again later. {:?}",
+                                problem
+                            );
+                        }
+                    }
+                    task::sleep(duration).await;
+                }
+            })
+        };
+
+        let (mut sender, receiver) = futures::channel::mpsc::unbounded();
+        let listen_task = {
+            let topics = topics.clone();
+            let self_id = [self_id.to_vec().into_boxed_slice()];
+
+            task::spawn(async move {
+                loop {
+                    if let Ok(message) = wait_response(socket.clone()).await {
+                        for hyperswarm_domain in topics.read().await.iter() {
+                            let found = select_ip_from_hyperswarm_mdns_response(
+                                &message.data,
+                                message.origin_address.ip(),
+                                &hyperswarm_domain,
+                                &self_id,
+                            );
+
+                            if let Some(peer) = found {
+                                log::debug!("Announce received {:?}", sender.send(peer).await);
+                            }
+                        }
+                    }
+                }
+            })
+        };
+
+        Self {
+            topics,
+            _broadcast_task: broadcast_task,
+            _listen_task: listen_task,
+            stream: Box::new(receiver),
+        }
     }
 
-    pub fn with_identifier(
-        socket: multicast_socket::MulticastSocket,
-        hash: &[u8],
-        self_id: String,
-        announcement_window: Duration,
-    ) -> anyhow::Result<Self> {
-        let self_id: crate::OwnedSelfId = [self_id.into_bytes().into_boxed_slice()];
-        let hyperswarm_domain = crate::hash_as_domain_name(hash)?;
-        let socket = Arc::from(socket);
+    pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
+        let value = crate::hash_as_domain_name(topic)?;
+        self.topics.write().await.insert(value);
+        Ok(())
+    }
 
-        let broadcast_stream = stream::unfold(
-            (hyperswarm_domain.clone(), socket.clone()),
-            |(hyperswarm_domain, socket)| async move {
-                let broadcast_result = broadcast(hyperswarm_domain.clone(), socket.clone()).await;
-                if let Err(problem) = broadcast_result {
-                    log::warn!(
-                        "failed to broadcast a packet. trying again later. {:?}",
-                        problem
-                    );
-                }
-                Some(((), (hyperswarm_domain, socket)))
-            },
-        )
-        .throttle(announcement_window);
-
-        let response_stream = stream::unfold(socket, |socket| async {
-            let response = wait_response(socket.clone()).await;
-            Some((response, socket))
-        })
-        .filter_map(|item| item.ok())
-        .filter_map(move |message| {
-            select_ip_from_hyperswarm_mdns_response(
-                message.data,
-                message.origin_address.ip(),
-                &hyperswarm_domain,
-                &self_id,
-            )
-        });
-
-        Ok(Locator {
-            broadcast_stream: Box::pin(broadcast_stream),
-            response_stream: Box::pin(response_stream),
-        })
+    pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
+        let value = crate::hash_as_domain_name(topic)?;
+        self.topics.write().await.remove(&value);
+        Ok(())
     }
 }
 
 fn select_ip_from_hyperswarm_mdns_response(
-    packet: Vec<u8>,
+    packet: &[u8],
     origin_ip: &Ipv4Addr,
     hyperswarm_domain: &Name,
     self_id: crate::SelfId,
 ) -> Option<SocketAddr> {
-    let dns_message = Message::from_vec(&packet).ok()?;
+    let dns_message = Message::from_vec(packet).ok()?;
     if dns_message.answer_count() != 3 {
         return None;
     }
@@ -146,9 +167,6 @@ impl futures::Stream for Locator {
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> task::Poll<Option<Self::Item>> {
-        use futures::stream::StreamExt;
-
-        let _ = self.broadcast_stream.poll_next_unpin(cx);
-        self.response_stream.poll_next_unpin(cx)
+        self.stream.poll_next_unpin(cx)
     }
 }
