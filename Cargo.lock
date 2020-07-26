@@ -535,6 +535,8 @@ dependencies = [
  "async-std",
  "colmeia-hypercore",
  "env_logger",
+ "futures",
+ "hypercore",
  "log",
  "random-access-storage",
  "serde",

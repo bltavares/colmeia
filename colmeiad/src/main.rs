@@ -1,5 +1,6 @@
 use async_std::{sync::RwLock, task};
 use colmeia_hypercore::*;
+use futures::future::OptionFuture;
 use std::sync::Arc;
 use tide::{Request, StatusCode};
 
@@ -33,37 +34,33 @@ where
 {
     let driver = req.state().read().await;
 
-    let content = match &driver.content {
-        Some(content) => {
-            let len = content.read().await.len();
-            let blocks = content
-                .write()
-                .await
-                .audit()
-                .await
-                .map_err(|e| tide::Error::from_str(StatusCode::InternalServerError, e))?
-                .valid_blocks;
-            Some(FeedInfo { len, blocks })
-        }
-        None => None,
-    };
+    let content: OptionFuture<_> = driver.content.as_ref().map(feed_info).into();
+    let content = content.await.transpose()?;
 
-    let metadata = {
-        let len = driver.metadata.read().await.len();
-        let blocks = driver
-            .metadata
-            .write()
-            .await
-            .audit()
-            .await
-            .map_err(|e| tide::Error::from_str(StatusCode::InternalServerError, e))?
-            .valid_blocks;
-        FeedInfo { len, blocks }
-    };
+    let metadata = feed_info(&driver.metadata).await?;
+
     let info = Info { metadata, content };
     Ok(tide::Response::builder(200)
         .body(tide::convert::json!(info))
         .build())
+}
+
+async fn feed_info<Storage>(feed: &Arc<RwLock<hypercore::Feed<Storage>>>) -> tide::Result<FeedInfo>
+where
+    Storage: random_access_storage::RandomAccess<Error = Box<dyn std::error::Error + Send + Sync>>
+        + std::fmt::Debug
+        + Send
+        + Sync,
+{
+    let len = feed.read().await.len();
+    let blocks = feed
+        .write()
+        .await
+        .audit()
+        .await
+        .map_err(|e| tide::Error::from_str(StatusCode::InternalServerError, e))?
+        .valid_blocks;
+    Ok(FeedInfo { len, blocks })
 }
 
 #[async_std::main]
