@@ -1,0 +1,33 @@
+[package]
+name = 'colmeia-hypercore'
+version = '0.1.0'
+authors = ['Bruno Tavares <connect+github@bltavares.com>']
+edition = '2018'
+
+[dependencies]
+futures = '0.3.5'
+ed25519-dalek = '1.0.0-pre.3'
+hypercore = '0.11.1-beta.9'
+anyhow = '1.0.31'
+random-access-storage = '4.0.0'
+random-access-memory = '2.0.0'
+random-access-disk = '2.0.0'
+async-trait = '0.1.36'
+log = '0.4.8'
+bitfield-rle = '0.2.0'
+protobuf = '2.10.1'
+hex = '0.4.2'
+thiserror = '1.0.20'
+
+[dependencies.colmeia-hyperswarm-mdns]
+path = '../colmeia-hyperswarm-mdns'
+
+[dependencies.async-std]
+version = '1.6.2'
+features = ['unstable']
+
+[dependencies.hypercore-protocol]
+git = 'https://github.com/Frando/hypercore-protocol-rs'
+
+[build-dependencies]
+protobuf-codegen-pure = '2.10.1'

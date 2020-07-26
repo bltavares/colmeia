@@ -1,7 +1,8 @@
 use async_std::net::TcpStream;
-use colmeia_hypercore_utils::{parse, UrlResolution};
 use hypercore_protocol as proto;
 use std::net::SocketAddr;
+
+use colmeia_hypercore::PublicKeyExt;
 
 fn name() -> String {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -23,11 +24,8 @@ fn main() {
 
     let key = name();
     let address = address();
-    let dat_key = parse(&key).expect("invalid dat argument");
-    let dat_key = match dat_key {
-        UrlResolution::HashUrl(result) => result,
-        _ => panic!("invalid hash key"),
-    };
+    let key = key.parse_from_hash().expect("invalid dat argument");
+
     async_std::task::block_on(async {
         let tcp_stream = TcpStream::connect(address)
             .await
@@ -35,18 +33,17 @@ fn main() {
         let mut stream = proto::ProtocolBuilder::initiator().connect(tcp_stream);
 
         while let Ok(event) = stream.loop_next().await {
-            dbg!(&event);
             match event {
                 proto::Event::Handshake(_) => {
                     stream
-                        .open(dat_key.public_key().to_bytes().to_vec())
+                        .open(key.as_bytes().to_vec())
                         .await
                         .expect("could not start the stream");
                 }
                 proto::Event::DiscoveryKey(_) | proto::Event::Close(_) => {}
                 proto::Event::Channel(mut channel) => {
                     let msg = proto::schema::Close {
-                        discovery_key: Some(dat_key.discovery_key().to_vec()),
+                        discovery_key: Some(hypercore_protocol::discovery_key(key.as_bytes())),
                     };
                     channel
                         .close(msg)

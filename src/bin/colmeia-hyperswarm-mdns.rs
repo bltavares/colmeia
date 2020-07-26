@@ -1,5 +1,5 @@
 use async_std::{prelude::StreamExt, task};
-use colmeia_hypercore_utils::{parse, UrlResolution};
+use colmeia_hypercore::PublicKeyExt;
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
 use std::env;
 use std::time::Duration;
@@ -27,19 +27,15 @@ fn main() {
 
     env_logger::init();
 
-    let parse_result = parse(&hyper_hash).expect("could not parse data");
+    let key = hyper_hash.parse_from_hash().expect("could not parse hash");
 
-    if let UrlResolution::HashUrl(hash) = parse_result {
-        task::block_on(async move {
-            let mut mdns = MdnsDiscovery::new(hash.discovery_key().to_vec());
-            mdns.with_announcer(port)
-                .with_locator(Duration::from_secs(duration));
+    task::block_on(async move {
+        let mut mdns = MdnsDiscovery::new(hypercore_protocol::discovery_key(key.as_bytes()));
+        mdns.with_announcer(port)
+            .with_locator(Duration::from_secs(duration));
 
-            while let Some(packet) = mdns.next().await {
-                println!("Found peer on {:?}", packet);
-            }
-        });
-    } else {
-        println!("this is a regular DNS")
-    }
+        while let Some(packet) = mdns.next().await {
+            println!("Found peer on {:?}", packet);
+        }
+    });
 }
