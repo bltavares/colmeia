@@ -231,19 +231,6 @@ pub async fn replicate_hyperdrive<C, Storage>(
                 }
             }
             HyperdriveEvents::Client(Err(_)) => {
-                // TODO delete this branch
-                // Only used for debug purpose
-                // should be on upper layer
-                let driver = hyperdrive.read().await;
-                let mut metadata = driver.metadata.write().await;
-                log::debug!("Metadata audit: {:?}", metadata.audit().await);
-                log::debug!("Metadata len: {:?}", metadata.len());
-
-                if let Some(ref content) = driver.content {
-                    let mut content = content.write().await;
-                    log::debug!("Content audit: {:?}", content.audit().await);
-                    log::debug!("Content len: {:?}", content.len());
-                };
                 break;
             }
             // TODO listen to metadata ondata evnt to initialize content feed
