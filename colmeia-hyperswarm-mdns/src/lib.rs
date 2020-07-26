@@ -108,7 +108,6 @@ impl Stream for MdnsDiscovery {
     type Item = SocketAddr;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-
         if let Some(ref mut announcer) = &mut self.announce {
             let _ = announcer.poll_next_unpin(cx);
         };
@@ -118,5 +117,11 @@ impl Stream for MdnsDiscovery {
         }
 
         Poll::Pending
+    }
+}
+
+impl Default for MdnsDiscovery {
+    fn default() -> Self {
+        Self::new()
     }
 }
