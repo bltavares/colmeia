@@ -43,7 +43,7 @@ Uses NOISE protocol and a different handshake.
 
 #### Protocol
 
-- [ ] **wip** `colmeia-hypercore**: Networked module for hypercore storage
+- [ ] **wip** `colmeia-hypercore`: Networked module for hypercore storage
   - [ ] Clone metadata into a hypercore feed
   - [ ] Hypercore and Hyperfeed impl
   - [ ] Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/hypercore-protocol/hyperdrive/blob/v10.13.0/index.js#L186))
