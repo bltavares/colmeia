@@ -1,7 +1,7 @@
-use async_std::{prelude::StreamExt, sync::RwLock, task};
+use async_std::{prelude::FutureExt, prelude::StreamExt, sync::RwLock, task};
 use colmeia_hypercore::PublicKeyExt;
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
-use std::env;
+use std::{env, net::Ipv4Addr, net::SocketAddr};
 use std::{sync::Arc, time::Duration};
 
 // 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5
@@ -41,8 +41,25 @@ fn main() {
         {
             let mdns = mdns.clone();
             task::spawn(async move {
-                while let Some(packet) = mdns.write().await.next().await {
-                    println!("Found peer on {:?}", packet);
+                loop {
+                    log::debug!("trying to read a packet");
+                    let packet_attempt = {
+                        let mut write_lock = mdns.write().await;
+                        write_lock.next().timeout(Duration::from_secs(1)).await
+                    };
+
+                    match packet_attempt {
+                        Ok(Some(packet)) => {
+                            println!("Found peer on {:?}", packet);
+                        }
+                        Err(_) => {
+                            log::debug!("timed out");
+                            task::sleep(Duration::from_secs(1)).await;
+                        }
+                        Ok(None) => {
+                            continue;
+                        }
+                    }
                 }
             });
         }
@@ -52,22 +69,26 @@ fn main() {
             let mdns = mdns.clone();
             let topic = topic.clone();
             task::spawn(async move {
+                log::debug!("registering topic");
                 mdns.write()
                     .await
                     .add_topic(&topic)
                     .await
                     .expect("could not write topic");
+                log::debug!("topic registered");
             });
         }
 
         // Spawn a task to remove a topic after 30 secs, then finish the program
         task::spawn(async move {
             task::sleep(Duration::from_secs(30)).await;
+            log::debug!("sopping cli");
             mdns.write()
                 .await
                 .remove_topic(&topic)
                 .await
                 .expect("failed to remove topic");
+            log::debug!("stoped cli");
         })
         .await;
     });

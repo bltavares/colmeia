@@ -12,9 +12,7 @@ log = '0.4.8'
 futures = '0.3.5'
 anyhow = '1.0.31'
 rand = '0.7.3'
-
-[dependencies.multicast-socket]
-git = 'https://github.com/bltavares/multicast-socket.git'
+multicast-socket = '0.2.0'
 
 [dependencies.async-std]
 version = '1.6.0'
