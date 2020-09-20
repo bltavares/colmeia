@@ -1,7 +1,7 @@
 use async_std::{prelude::FutureExt, prelude::StreamExt, sync::RwLock, task};
 use colmeia_hypercore::PublicKeyExt;
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
-use std::{env, net::Ipv4Addr, net::SocketAddr};
+use std::env;
 use std::{sync::Arc, time::Duration};
 
 // 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5
