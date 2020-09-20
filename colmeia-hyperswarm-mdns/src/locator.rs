@@ -98,7 +98,8 @@ impl Locator {
                             );
 
                             if let Some(peer) = found {
-                                log::debug!("Announce received {:?}", sender.send(peer).await);
+                                let result = sender.send(peer).await;
+                                log::debug!("Announce received {:?}: {:?}", peer, result);
                             }
                         }
                     }
