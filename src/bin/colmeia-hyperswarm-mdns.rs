@@ -1,8 +1,7 @@
 use async_std::{prelude::FutureExt, prelude::StreamExt, sync::RwLock, task};
 use colmeia_hypercore::PublicKeyExt;
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
-use std::env;
-use std::{sync::Arc, time::Duration};
+use std::{env, sync::Arc, time::Duration};
 
 // 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5
 // pra
@@ -42,10 +41,9 @@ fn main() {
             let mdns = mdns.clone();
             task::spawn(async move {
                 loop {
-                    log::debug!("trying to read a packet");
                     let packet_attempt = {
-                        let mut write_lock = mdns.write().await;
-                        write_lock.next().timeout(Duration::from_secs(1)).await
+                        let mut lock = mdns.write().await;
+                        lock.next().timeout(Duration::from_secs(1)).await
                     };
 
                     match packet_attempt {
@@ -53,11 +51,10 @@ fn main() {
                             println!("Found peer on {:?}", packet);
                         }
                         Err(_) => {
-                            log::debug!("timed out");
-                            task::sleep(Duration::from_secs(1)).await;
+                            task::yield_now().await;
                         }
                         Ok(None) => {
-                            continue;
+                            break;
                         }
                     }
                 }
