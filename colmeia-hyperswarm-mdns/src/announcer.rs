@@ -114,10 +114,8 @@ impl Announcer {
                             .iter()
                             .find(|name| is_same_hash_questions(&message.data, name).is_some())
                         {
-                            log::debug!(
-                                "Announce received {:?}",
-                                sender.send(*message.origin_address.ip()).await
-                            );
+                            let result = sender.send(*message.origin_address.ip()).await;
+                            log::debug!("Announce received {:?}", result);
                             let reply = respond(
                                 (*name).clone(),
                                 message.interface,
