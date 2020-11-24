@@ -1,6 +1,6 @@
 use anyhow::Context;
-use async_std::{stream::StreamExt, task};
-use futures::{stream, stream::StreamExt as FStreamExt, FutureExt, Stream};
+use async_std::{sync::RwLock, task};
+use futures::{stream::StreamExt as FStreamExt, SinkExt, Stream};
 use trust_dns_proto::op::{Message, MessageType};
 use trust_dns_proto::rr::{
     rdata::{SRV, TXT},
@@ -8,8 +8,8 @@ use trust_dns_proto::rr::{
 };
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
 
-use std::io;
 use std::sync::Arc;
+use std::{collections::HashMap, io};
 use std::{net::Ipv4Addr, pin::Pin};
 
 pub fn packet(
@@ -86,84 +86,80 @@ fn is_same_hash_questions(packet: &[u8], hyperswarm_domain: &Name) -> Option<Mes
     Some(dns_message)
 }
 
-type ListenContext = (
-    multicast_socket::Message,
-    Arc<multicast_socket::MulticastSocket>,
-);
-
 pub struct Announcer {
-    stream: Pin<Box<dyn Stream<Item = Ipv4Addr> + Send>>,
+    topics: Arc<RwLock<HashMap<Vec<u8>, Name>>>,
+    _listener_job: task::JoinHandle<()>,
+    stream: Box<dyn Stream<Item = (Vec<u8>, Ipv4Addr)> + Unpin + Send + Sync>,
 }
 
 impl Announcer {
-    pub fn new(
+    pub fn listen(
         socket: multicast_socket::MulticastSocket,
-        hash: &[u8],
-        port: u16,
-    ) -> anyhow::Result<Self> {
-        Announcer::with_identifier(socket, hash, port, crate::self_id())
-    }
-
-    pub fn with_identifier(
-        socket: multicast_socket::MulticastSocket,
-        hash: &[u8],
         port: u16,
         self_identifier: String,
-    ) -> anyhow::Result<Self> {
-        let hyperswarm_domain = Arc::from(crate::hash_as_domain_name(hash)?);
+    ) -> Self {
+        let topics: Arc<RwLock<HashMap<Vec<u8>, Name>>> = Default::default();
         let socket = Arc::from(socket);
 
-        let listener = stream::unfold(socket, |socket| async {
-            let response = wait_broadcast(socket.clone()).await;
-            Some((response.map(|msg| (msg, socket.clone())), socket))
-        });
+        let (mut sender, receiver) = futures::channel::mpsc::unbounded();
+        let listener_job = {
+            let topics = topics.clone();
 
-        let listen_stream = StreamExt::filter_map(listener, |i| i.ok());
+            task::spawn(async move {
+                loop {
+                    if let Ok(message) = wait_broadcast(socket.clone()).await {
+                        if let Some((discovery_key, name)) =
+                            topics.read().await.iter().find(|(_, name)| {
+                                is_same_hash_questions(&message.data, name).is_some()
+                            })
+                        {
+                            let result = sender
+                                .send((discovery_key.clone(), *message.origin_address.ip()))
+                                .await;
+                            log::debug!("Announce received {:?}", result);
+                            let reply = respond(
+                                (*name).clone(),
+                                message.interface,
+                                socket.clone(),
+                                port,
+                                self_identifier.clone(),
+                            )
+                            .await;
 
-        let select_packets_fn = {
-            let name = hyperswarm_domain.clone();
-            move |(message, _): &ListenContext| {
-                is_same_hash_questions(&message.data, &name).is_some()
-            }
+                            if let Err(e) = reply {
+                                log::warn!("Could not send response back {}", e);
+                            }
+                        }
+                    }
+                }
+            })
         };
-        let listen_stream = StreamExt::filter(listen_stream, select_packets_fn);
 
-        let response_fn = {
-            let name = hyperswarm_domain.clone();
-            move |(message, socket): ListenContext| {
-                let result = respond(
-                    (*name).clone(),
-                    message.interface,
-                    socket,
-                    port,
-                    self_identifier.clone(),
-                );
-                let origin_address = message.origin_address;
-                result.map(move |i| (i, origin_address))
-            }
-        };
-        let listen_stream = StreamExt::map(listen_stream, response_fn);
-        let listen_stream = FStreamExt::then(listen_stream, |result| async {
-            let (result, origin_address) = result.await;
-            if let Err(e) = result {
-                log::warn!("Could not send response back {}", e);
-            }
-            *origin_address.ip()
-        });
+        Self {
+            topics,
+            _listener_job: listener_job,
+            stream: Box::new(receiver),
+        }
+    }
 
-        Ok(Announcer {
-            stream: Box::pin(listen_stream),
-        })
+    pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
+        let value = crate::hash_as_domain_name(topic)?;
+        self.topics.write().await.insert(topic.to_vec(), value);
+        Ok(())
+    }
+
+    pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
+        self.topics.write().await.remove(topic);
+        Ok(())
     }
 }
 
 impl futures::Stream for Announcer {
-    type Item = Ipv4Addr;
+    type Item = (Vec<u8>, Ipv4Addr);
     fn poll_next(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> task::Poll<Option<Self::Item>> {
-        use futures::stream::StreamExt;
         self.stream.poll_next_unpin(cx)
     }
 }

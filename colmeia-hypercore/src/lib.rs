@@ -6,5 +6,5 @@ mod utils;
 
 pub use hyperdrive::{in_memmory, Hyperdrive};
 pub use hyperstack::Hyperstack;
-pub use network::{PeeredFeed, replicate_hyperdrive, Emit};
+pub use network::{replicate_hyperdrive, Emit, PeeredFeed};
 pub use utils::{HashParserError, PublicKeyExt};
