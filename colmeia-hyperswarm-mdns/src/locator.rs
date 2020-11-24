@@ -1,11 +1,11 @@
 use anyhow::Context;
 use async_std::{sync::RwLock, task};
 use futures::{SinkExt, Stream, StreamExt};
-use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::pin::Pin;
 use std::sync::Arc;
-use std::{collections::HashSet, time::Duration};
+use std::time::Duration;
+use std::{collections::HashMap, io};
 use trust_dns_proto::op::{Message, MessageType, Query};
 use trust_dns_proto::rr::{Name, RData, RecordType};
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
@@ -46,10 +46,10 @@ async fn wait_response(
 }
 
 pub struct Locator {
-    topics: Arc<RwLock<HashSet<Name>>>,
+    topics: Arc<RwLock<HashMap<Vec<u8>, Name>>>,
     _listen_task: task::JoinHandle<()>,
     _broadcast_task: task::JoinHandle<()>,
-    stream: Box<dyn Stream<Item = SocketAddr> + Unpin + Send + Sync>,
+    stream: Box<dyn Stream<Item = (Vec<u8>, SocketAddr)> + Unpin + Send + Sync>,
 }
 
 impl Locator {
@@ -58,7 +58,7 @@ impl Locator {
         duration: Duration,
         self_id: &[u8],
     ) -> Self {
-        let topics: Arc<RwLock<HashSet<Name>>> = Default::default();
+        let topics: Arc<RwLock<HashMap<Vec<u8>, Name>>> = Default::default();
         let socket = Arc::new(socket);
 
         let broadcast_task = {
@@ -67,7 +67,7 @@ impl Locator {
 
             task::spawn(async move {
                 loop {
-                    for topic in topics.read().await.iter() {
+                    for (_, topic) in topics.read().await.iter() {
                         let broadcast_result = broadcast(topic.clone(), socket.clone()).await;
                         if let Err(problem) = broadcast_result {
                             log::warn!(
@@ -89,7 +89,7 @@ impl Locator {
             task::spawn(async move {
                 loop {
                     if let Ok(message) = wait_response(socket.clone()).await {
-                        for hyperswarm_domain in topics.read().await.iter() {
+                        for (discovery_key, hyperswarm_domain) in topics.read().await.iter() {
                             let found = select_ip_from_hyperswarm_mdns_response(
                                 &message.data,
                                 message.origin_address.ip(),
@@ -98,7 +98,7 @@ impl Locator {
                             );
 
                             if let Some(peer) = found {
-                                let result = sender.send(peer).await;
+                                let result = sender.send((discovery_key.clone(), peer)).await;
                                 log::debug!("Announce received {:?}: {:?}", peer, result);
                             }
                         }
@@ -117,13 +117,12 @@ impl Locator {
 
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let value = crate::hash_as_domain_name(topic)?;
-        self.topics.write().await.insert(value);
+        self.topics.write().await.insert(topic.to_vec(), value);
         Ok(())
     }
 
     pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
-        let value = crate::hash_as_domain_name(topic)?;
-        self.topics.write().await.remove(&value);
+        self.topics.write().await.remove(topic);
         Ok(())
     }
 }
@@ -163,7 +162,7 @@ fn select_ip_from_hyperswarm_mdns_response(
 }
 
 impl futures::Stream for Locator {
-    type Item = SocketAddr;
+    type Item = (Vec<u8>, SocketAddr);
     fn poll_next(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,

@@ -8,9 +8,9 @@ use trust_dns_proto::rr::{
 };
 use trust_dns_proto::serialize::binary::{BinEncodable, BinEncoder};
 
-use std::io;
 use std::sync::Arc;
-use std::{collections::HashSet, net::Ipv4Addr, pin::Pin};
+use std::{collections::HashMap, io};
+use std::{net::Ipv4Addr, pin::Pin};
 
 pub fn packet(
     hyperswarm_domain: Name,
@@ -87,9 +87,9 @@ fn is_same_hash_questions(packet: &[u8], hyperswarm_domain: &Name) -> Option<Mes
 }
 
 pub struct Announcer {
-    topics: Arc<RwLock<HashSet<Name>>>,
+    topics: Arc<RwLock<HashMap<Vec<u8>, Name>>>,
     _listener_job: task::JoinHandle<()>,
-    stream: Box<dyn Stream<Item = Ipv4Addr> + Unpin + Send + Sync>,
+    stream: Box<dyn Stream<Item = (Vec<u8>, Ipv4Addr)> + Unpin + Send + Sync>,
 }
 
 impl Announcer {
@@ -98,7 +98,7 @@ impl Announcer {
         port: u16,
         self_identifier: String,
     ) -> Self {
-        let topics: Arc<RwLock<HashSet<Name>>> = Default::default();
+        let topics: Arc<RwLock<HashMap<Vec<u8>, Name>>> = Default::default();
         let socket = Arc::from(socket);
 
         let (mut sender, receiver) = futures::channel::mpsc::unbounded();
@@ -108,13 +108,14 @@ impl Announcer {
             task::spawn(async move {
                 loop {
                     if let Ok(message) = wait_broadcast(socket.clone()).await {
-                        if let Some(name) = topics
-                            .read()
-                            .await
-                            .iter()
-                            .find(|name| is_same_hash_questions(&message.data, name).is_some())
+                        if let Some((discovery_key, name)) =
+                            topics.read().await.iter().find(|(_, name)| {
+                                is_same_hash_questions(&message.data, name).is_some()
+                            })
                         {
-                            let result = sender.send(*message.origin_address.ip()).await;
+                            let result = sender
+                                .send((discovery_key.clone(), *message.origin_address.ip()))
+                                .await;
                             log::debug!("Announce received {:?}", result);
                             let reply = respond(
                                 (*name).clone(),
@@ -143,19 +144,18 @@ impl Announcer {
 
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let value = crate::hash_as_domain_name(topic)?;
-        self.topics.write().await.insert(value);
+        self.topics.write().await.insert(topic.to_vec(), value);
         Ok(())
     }
 
     pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
-        let value = crate::hash_as_domain_name(topic)?;
-        self.topics.write().await.remove(&value);
+        self.topics.write().await.remove(topic);
         Ok(())
     }
 }
 
 impl futures::Stream for Announcer {
-    type Item = Ipv4Addr;
+    type Item = (Vec<u8>, Ipv4Addr);
     fn poll_next(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,

@@ -105,7 +105,7 @@ impl MdnsDiscovery {
 }
 
 impl Stream for MdnsDiscovery {
-    type Item = SocketAddr;
+    type Item = (Vec<u8>, SocketAddr);
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         if let Some(ref mut announcer) = &mut self.announce {

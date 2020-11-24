@@ -8,6 +8,7 @@ use std::{env, sync::Arc, time::Duration};
 // b62ef6792a0e2f2c5be328593532415d80c0f52c // 32 bytes
 // Derivacao igual ao dat1
 fn main() {
+    log::debug!("Starting up");
     let hyper_hash = env::args()
         .nth(1)
         .expect("provide a hyper hash as argument");
@@ -41,14 +42,19 @@ fn main() {
             let mdns = mdns.clone();
             task::spawn(async move {
                 loop {
-                    let packet_attempt = {
-                        let mut lock = mdns.write().await;
-                        lock.next().timeout(Duration::from_secs(1)).await
+                    log::debug!("trying to find a peer");
+                    let discovery_attempt = {
+                        let mut write_lock = mdns.write().await;
+                        write_lock.next().timeout(Duration::from_secs(1)).await
                     };
 
-                    match packet_attempt {
-                        Ok(Some(packet)) => {
-                            println!("Found peer on {:?}", packet);
+                    match discovery_attempt {
+                        Ok(Some((discovery_key, peer))) => {
+                            println!(
+                                "Found peer {:?} serving {}",
+                                peer,
+                                hex::encode(discovery_key)
+                            );
                         }
                         Err(_) => {
                             task::yield_now().await;
