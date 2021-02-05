@@ -1,33 +1,9 @@
-[package]
-name = 'colmeia'
-version = '0.1.0'
-authors = ['Bruno Tavares <connect+github@bltavares.com>']
-edition = '2018'
-
 [workspace]
 members = [
-    'colmeia-hyperswarm-mdns',
+    'colmeia-bins',
     'colmeia-hypercore',
+    'colmeia-hyperdrive',
+    'colmeia-hyperstack',
+    'colmeia-hyperswarm-mdns',
     'colmeiad',
 ]
-
-[dependencies]
-futures = '*'
-env_logger = '*'
-log = '*'
-hex = '*'
-anyhow = '*'
-ed25519-dalek = '=1.0.0-pre.3'
-
-[dependencies.async-std]
-version = '1.6.2'
-features = ['unstable']
-
-[dependencies.hypercore-protocol]
-git = 'https://github.com/Frando/hypercore-protocol-rs'
-
-[dependencies.colmeia-hyperswarm-mdns]
-path = 'colmeia-hyperswarm-mdns'
-
-[dependencies.colmeia-hypercore]
-path = 'colmeia-hypercore'

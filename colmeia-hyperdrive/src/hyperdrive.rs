@@ -1,6 +1,5 @@
 use anyhow::Context;
 use async_std::sync::RwLock;
-use ed25519_dalek::PublicKey;
 use std::sync::Arc;
 
 pub struct Hyperdrive<Storage>
@@ -40,7 +39,7 @@ where
 }
 
 pub async fn in_memmory(
-    public_key: PublicKey,
+    public_key: hypercore::PublicKey,
 ) -> anyhow::Result<Hyperdrive<random_access_memory::RandomAccessMemory>> {
     let metadata = hypercore::Feed::builder(
         public_key,

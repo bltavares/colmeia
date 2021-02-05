@@ -135,9 +135,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.31"
+version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85bb70cc08ec97ca5450e6eba421deeea5f172c0fc61f78b5357b2a8e8be195f"
+checksum = "afddf7f520a80dbf76e6f50a35bca42a2331ef227a28b3b6dc5c2e2338d114b1"
 
 [[package]]
 name = "arrayvec"
@@ -475,16 +475,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "colmeia"
+name = "colmeia-bins"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-std",
- "colmeia-hypercore",
+ "colmeia-hyperstack",
  "colmeia-hyperswarm-mdns",
- "ed25519-dalek",
  "env_logger",
- "futures",
  "hex",
  "hypercore-protocol",
  "log",
@@ -496,17 +493,46 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
- "async-trait",
  "bitfield-rle",
- "colmeia-hyperswarm-mdns",
- "ed25519-dalek",
  "futures",
- "hex",
+ "hypercore",
+ "hypercore-protocol",
+ "log",
+ "random-access-storage",
+]
+
+[[package]]
+name = "colmeia-hyperdrive"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "async-trait",
+ "colmeia-hypercore",
+ "futures",
  "hypercore",
  "hypercore-protocol",
  "log",
  "protobuf",
  "protobuf-codegen-pure",
+ "random-access-disk",
+ "random-access-memory",
+ "random-access-storage",
+]
+
+[[package]]
+name = "colmeia-hyperstack"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "colmeia-hyperdrive",
+ "colmeia-hyperswarm-mdns",
+ "ed25519-dalek",
+ "futures",
+ "hex",
+ "hypercore-protocol",
+ "log",
  "random-access-disk",
  "random-access-memory",
  "random-access-storage",
@@ -532,13 +558,11 @@ dependencies = [
 name = "colmeiad"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-std",
- "colmeia-hypercore",
+ "colmeia-hyperstack",
  "env_logger",
  "futures",
  "hypercore",
- "log",
  "random-access-storage",
  "serde",
  "tide",

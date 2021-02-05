@@ -1,5 +1,5 @@
 [package]
-name = 'colmeia-hypercore'
+name = 'colmeia-hyperdrive'
 version = '0.1.0'
 authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
@@ -9,8 +9,14 @@ futures = '0.3.5'
 hypercore = '0.11.1-beta.9'
 anyhow = '1.0.34'
 random-access-storage = '4.0.0'
+random-access-memory = '2.0.0'
+random-access-disk = '2.0.0'
+async-trait = '0.1.36'
 log = '0.4.8'
-bitfield-rle = '0.2.0'
+protobuf = '2.10.1'
+
+[dependencies.colmeia-hypercore]
+path = '../colmeia-hypercore'
 
 [dependencies.async-std]
 version = '1.6.2'
@@ -18,3 +24,6 @@ features = ['unstable']
 
 [dependencies.hypercore-protocol]
 git = 'https://github.com/Frando/hypercore-protocol-rs'
+
+[build-dependencies]
+protobuf-codegen-pure = '2.10.1'

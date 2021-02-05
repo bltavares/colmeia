@@ -1,5 +1,5 @@
 use async_std::task;
-use colmeia_hypercore::*;
+use colmeia_hyperstack::{utils::PublicKeyExt, Hyperstack};
 
 fn name() -> String {
     let args: Vec<String> = std::env::args().skip(1).collect();

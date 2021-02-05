@@ -10,7 +10,7 @@ trust-dns-proto = '0.19.5'
 lazy_static = '1.4.0'
 log = '0.4.8'
 futures = '0.3.5'
-anyhow = '1.0.31'
+anyhow = '1.0.34'
 rand = '0.7.3'
 multicast-socket = '0.2.0'
 
