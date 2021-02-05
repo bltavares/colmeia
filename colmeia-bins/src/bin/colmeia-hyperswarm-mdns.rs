@@ -1,5 +1,5 @@
 use async_std::{prelude::FutureExt, prelude::StreamExt, sync::RwLock, task};
-use colmeia_hypercore::PublicKeyExt;
+use colmeia_hyperstack::utils::PublicKeyExt;
 use colmeia_hyperswarm_mdns::MdnsDiscovery;
 use std::{env, sync::Arc, time::Duration};
 

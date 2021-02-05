@@ -1,5 +1,5 @@
 use async_std::{sync::RwLock, task};
-use colmeia_hypercore::*;
+use colmeia_hyperstack::{hyperdrive::Hyperdrive, utils::PublicKeyExt, Hyperstack};
 use futures::future::OptionFuture;
 use std::sync::Arc;
 use tide::{Request, StatusCode};

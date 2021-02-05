@@ -39,17 +39,29 @@ Uses NOISE protocol and a different handshake.
   - [x] `Locator`: stream to find dat members in the network
   - [x] `Announcer`: stream that announces a dat in the network
   - [x] `Mdns`: announces and find dat in the network
+  - [ ] Tests
+  - [ ] All protocol 1:1
 - [ ] `colmeia-dht`: Interop with hypwerswarm dht infrastructure (:eyes: <https://github.com/mattsse/hyperswarm-dht>)
+  - [ ] Tests
+  - [ ] All protocol 1:1
 
 #### Protocol
 
-- [ ] **wip** `colmeia-hypercore`: Networked module for hypercore storage
-  - [ ] Clone metadata into a hypercore feed
-  - [ ] Hypercore and Hyperfeed impl
-  - [ ] Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/hypercore-protocol/hyperdrive/blob/v10.13.0/index.js#L186))
-  - [ ] Create a `Hypercore` struct that discovers and creates peeredfeed interactions
+- [x] **wip** `colmeia-hypercore`: Networked module for hypercore storage
+  - [x] Hypercore replicate logic
+  - [ ] Tests
+  - [ ] All protocol 1:1
+- [x] **wip** `colmeia-hyperdrive`: Networked implementation of content and metadata hypercore's
+  - [x] `Hyperdrive`: Use metadata to clone content hypercore feed ([first block is content public key](https://github.com/hypercore-protocol/hyperdrive/blob/v10.13.0/index.js#L186))
+  - [x] In memory
   - [ ] Write to disk
-  - [ ] Impl remaining replicate logic
+  - [x] Impl remaining replicate logic for Hyperdrives
+  - [ ] Tests
+  - [ ] All protocol 1:1
+- [x] **wip** `colmeia-hyperstack`: Discovery integration of hyperdrives
+  - [x] Create a `Hypercore` struct that discovers and creates peeredfeed interactions
+  - [ ] Tests
+
 
 #### Reference tools
 
@@ -74,7 +86,7 @@ Local dat2: be41e3d43d054982e14dfc60281d9d4425ab5d4b0b280a355b7927869ca08fc5
 
 ### Find a local peer
 
-[colmeia-mdns](./src/bin/colmeia-hyperswarm-mdns.rs)
+[colmeia-mdns](./colmeia-bins/src/bin/colmeia-hyperswarm-mdns.rs)
 
 ```sh
 RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 8000
@@ -82,7 +94,7 @@ RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21
 
 ### Connect and troubleshoot a peer
 
-[colmeia-nc](./src/bin/colmeia-nc.rs)
+[colmeia-nc](./colmeia-bins/src/bin/colmeia-nc.rs)
 
 ```sh
 RUST_LOG=debug cargo run --bin colmeia-nc -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 127.0.0.1:3282

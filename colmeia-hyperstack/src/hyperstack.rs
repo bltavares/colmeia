@@ -1,7 +1,3 @@
-use crate::{
-    hyperdrive::{self, Hyperdrive},
-    replicate_hyperdrive,
-};
 use anyhow::Context;
 use async_std::{
     net::{TcpListener, TcpStream},
@@ -9,6 +5,7 @@ use async_std::{
     sync::RwLock,
     task,
 };
+use colmeia_hyperdrive::Hyperdrive;
 use ed25519_dalek::PublicKey;
 use futures::{Future, Stream, StreamExt};
 use hypercore_protocol::ProtocolBuilder;
@@ -50,7 +47,7 @@ impl Hyperstack<random_access_disk::RandomAccessDisk> {
 
 impl Hyperstack<random_access_memory::RandomAccessMemory> {
     pub async fn in_memory(key: PublicKey, listen_address: SocketAddr) -> anyhow::Result<Self> {
-        let hyperdrive = hyperdrive::in_memmory(key).await?;
+        let hyperdrive = colmeia_hyperdrive::in_memmory(key).await?;
         Ok(Self {
             key,
             listen_address,
@@ -114,7 +111,11 @@ where
                                 if let Ok(tcp_stream) = TcpStream::connect(peer).await {
                                     connected_peers.write().await.insert(peer);
                                     let client = ProtocolBuilder::new(true).connect(tcp_stream);
-                                    replicate_hyperdrive(client, driver.clone()).await;
+                                    colmeia_hyperdrive::replicate_hyperdrive(
+                                        client,
+                                        driver.clone(),
+                                    )
+                                    .await;
                                     connected_peers.write().await.remove(&peer);
                                 }
                             });
@@ -139,7 +140,11 @@ where
                                     log::debug!("Received connection from {:?}", remote_addrs);
                                     connected_peers.write().await.insert(remote_addrs);
                                     let client = ProtocolBuilder::new(false).connect(tcp_stream);
-                                    replicate_hyperdrive(client, driver.clone()).await;
+                                    colmeia_hyperdrive::replicate_hyperdrive(
+                                        client,
+                                        driver.clone(),
+                                    )
+                                    .await;
                                     connected_peers.write().await.remove(&remote_addrs);
                                 });
                             }

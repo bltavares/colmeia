@@ -2,7 +2,7 @@ use async_std::net::TcpStream;
 use hypercore_protocol as proto;
 use std::net::SocketAddr;
 
-use colmeia_hypercore::PublicKeyExt;
+use colmeia_hyperstack::utils::PublicKeyExt;
 
 fn name() -> String {
     let args: Vec<String> = std::env::args().skip(1).collect();
