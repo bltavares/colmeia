@@ -4,6 +4,7 @@ members = [
     'colmeia-hypercore',
     'colmeia-hyperdrive',
     'colmeia-hyperstack',
+    'colmeia-hyperswarm-dht',
     'colmeia-hyperswarm-mdns',
     'colmeiad',
 ]

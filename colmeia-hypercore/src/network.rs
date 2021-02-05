@@ -2,6 +2,7 @@ use anyhow::Context;
 use async_std::sync::RwLock;
 use futures::{SinkExt, StreamExt};
 use hypercore_protocol as proto;
+use std::convert::TryFrom;
 use std::io;
 use std::sync::Arc;
 
@@ -57,7 +58,7 @@ where
             signature: message
                 .signature
                 .clone()
-                .and_then(|s| hypercore::Signature::from_bytes(&s).ok()),
+                .and_then(|s| hypercore::Signature::try_from(&s[..]).ok()),
         };
 
         self.feed

@@ -111,12 +111,11 @@ pub async fn replicate_hyperdrive<C, Storage>(
                         metadata.get(0).await
                     };
                     if let Ok(Some(initial_metadata)) = initial_metadata {
-                        let content = match protobuf::parse_from_bytes::<crate::schema::Index>(
-                            &initial_metadata,
-                        ) {
-                            Ok(e) => e,
-                            _ => continue,
-                        };
+                        let content: crate::schema::Index =
+                            match protobuf::Message::parse_from_bytes(&initial_metadata) {
+                                Ok(e) => e,
+                                _ => continue,
+                            };
 
                         let public_key =
                             match hypercore::PublicKey::from_bytes(content.get_content()) {

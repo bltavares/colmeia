@@ -65,7 +65,7 @@ where
 
 #[async_std::main]
 async fn main() -> Result<(), std::io::Error> {
-    env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let key = name();
     let hash = key.parse_from_hash().expect("invalid hash argument");
@@ -83,7 +83,7 @@ async fn main() -> Result<(), std::io::Error> {
     let hyperdrive = hyperstack.hyperdrive();
 
     let mut app = tide::with_state(hyperdrive);
-    app.middleware(tide::log::LogMiddleware::new());
+    app.with(tide::log::LogMiddleware::new());
     app.at("/").get(get_info);
     app.listen("127.0.0.1:8080").await?;
     job.await;

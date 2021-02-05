@@ -5,25 +5,28 @@ authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
 
 [dependencies]
-futures = '0.3.5'
-hypercore = '0.11.1-beta.9'
-anyhow = '1.0.34'
+futures = '0.3.12'
+anyhow = '1.0.38'
 random-access-storage = '4.0.0'
 random-access-memory = '2.0.0'
 random-access-disk = '2.0.0'
 async-trait = '0.1.36'
-log = '0.4.8'
-protobuf = '2.10.1'
+log = '0.4.14'
+protobuf = '2.20.0'
 
 [dependencies.colmeia-hypercore]
 path = '../colmeia-hypercore'
 
 [dependencies.async-std]
-version = '1.6.2'
+version = '1.9.0'
 features = ['unstable']
 
 [dependencies.hypercore-protocol]
 git = 'https://github.com/Frando/hypercore-protocol-rs'
 
+[dependencies.hypercore]
+git = 'https://github.com/bltavares/hypercore'
+branch = 'update-ed25519-dalek'
+
 [build-dependencies]
-protobuf-codegen-pure = '2.10.1'
+protobuf-codegen-pure = '2.20.0'

@@ -1,19 +1,18 @@
 [package]
-name = 'colmeia-hyperswarm-mdns'
+name = 'colmeia-hyperswarm-dht'
 version = '0.1.0'
 authors = ['Bruno Tavares <connect+github@bltavares.com>']
 edition = '2018'
 
 [dependencies]
-hex = '0.4.2'
-trust-dns-proto = '0.20.0'
-lazy_static = '1.4.0'
-log = '0.4.14'
-futures = '0.3.12'
 anyhow = '1.0.38'
-rand = '0.7.3'
-multicast-socket = '0.2.0'
+futures = '0.3.12'
+
+[dependencies.hyperswarm-dht]
+git = 'https://github.com/bltavares/hyperswarm-dht'
+branch = 'update-ed25519-dalek'
 
 [dependencies.async-std]
 version = '1.9.0'
 features = ['unstable']
+
