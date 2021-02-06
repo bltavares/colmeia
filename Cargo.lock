@@ -714,6 +714,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "colmeia-hyperdrive",
+ "colmeia-hyperswarm-dht",
  "colmeia-hyperswarm-mdns",
  "ed25519-dalek",
  "futures",

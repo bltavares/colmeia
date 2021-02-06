@@ -1,4 +1,4 @@
-use async_std::{sync::RwLock, task};
+use async_std::{prelude::StreamExt, sync::RwLock, task};
 use colmeia_hyperstack::{hyperdrive::Hyperdrive, utils::PublicKeyExt, Hyperstack};
 use futures::future::OptionFuture;
 use std::sync::Arc;
@@ -77,7 +77,8 @@ async fn main() -> Result<(), std::io::Error> {
         .lan()
         .await
         .expect("could not add key to mdns discovery");
-    hyperstack.with_discovery(mdns);
+    let dht = hyperstack.dht().await.expect("could not start dht");
+    hyperstack.with_discovery(mdns.merge(dht));
 
     let job = task::spawn(hyperstack.replicate());
     let hyperdrive = hyperstack.hyperdrive();

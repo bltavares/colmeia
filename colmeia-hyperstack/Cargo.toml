@@ -18,6 +18,9 @@ thiserror = '1.0.20'
 [dependencies.colmeia-hyperswarm-mdns]
 path = '../colmeia-hyperswarm-mdns'
 
+[dependencies.colmeia-hyperswarm-dht]
+path = '../colmeia-hyperswarm-dht'
+
 [dependencies.colmeia-hyperdrive]
 path = '../colmeia-hyperdrive'
 

@@ -7,6 +7,17 @@ pub struct Config {
     pub bootstrap_servers: Vec<String>,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            bootstrap_servers: hyperswarm_dht::DEFAULT_BOOTSTRAP
+                .iter()
+                .map(|&z| z.to_owned())
+                .collect(),
+        }
+    }
+}
+
 pub(crate) async fn dht(config: &Config) -> io::Result<HyperDht> {
     // TODO config
     let bind_address: SocketAddr = ([0, 0, 0, 0], 0).into();

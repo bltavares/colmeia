@@ -1,4 +1,4 @@
-use async_std::task;
+use async_std::{prelude::StreamExt, task};
 use colmeia_hyperstack::{utils::PublicKeyExt, Hyperstack};
 
 fn name() -> String {
@@ -25,7 +25,8 @@ fn main() {
             .await
             .expect("Could not start hyperdrive on the stack");
         let mdns = hyperstack.lan().await.expect("could not configure mdns");
-        hyperstack.with_discovery(mdns);
+        let dht = hyperstack.dht().await.expect("could not start dht");
+        hyperstack.with_discovery(mdns.merge(dht));
         hyperstack.replicate().await;
     });
 }

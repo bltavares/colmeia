@@ -29,13 +29,13 @@ impl DHTDiscovery {
         }
     }
 
-    pub async fn with_announcer(&mut self, duration: Duration) -> &mut Self {
+    pub async fn with_announcer(&mut self, port: u16, duration: Duration) -> &mut Self {
         let announcer = Announcer::new(&self.config).await;
         self.announce = announcer.ok();
         self
     }
 
-    pub async fn with_locator(&mut self, port: u16, duration: Duration) -> &mut Self {
+    pub async fn with_locator(&mut self, duration: Duration) -> &mut Self {
         let locator = Locator::new(&self.config).await;
         self.locate = locator.ok();
         self
@@ -80,11 +80,6 @@ impl Stream for DHTDiscovery {
 
 impl Default for DHTDiscovery {
     fn default() -> Self {
-        Self::new(Config {
-            bootstrap_servers: hyperswarm_dht::DEFAULT_BOOTSTRAP
-                .iter()
-                .map(|&z| z.to_owned())
-                .collect(),
-        })
+        Self::new(Config::default())
     }
 }
