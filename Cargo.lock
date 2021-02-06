@@ -665,10 +665,12 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "colmeia-hyperstack",
+ "colmeia-hyperswarm-dht",
  "colmeia-hyperswarm-mdns",
  "env_logger 0.8.2",
  "hex",
  "hypercore-protocol",
+ "hyperswarm-dht",
  "log",
 ]
 
@@ -732,6 +734,7 @@ dependencies = [
  "async-std",
  "futures",
  "hyperswarm-dht",
+ "log",
 ]
 
 [[package]]

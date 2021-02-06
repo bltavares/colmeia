@@ -1,3 +1,4 @@
+use futures::{Stream, StreamExt};
 use std::{
     net::SocketAddr,
     pin::Pin,
@@ -5,31 +6,38 @@ use std::{
     time::Duration,
 };
 
-use announcer::Announcer;
-use futures::{Stream, StreamExt};
-use locator::Locator;
+pub use announcer::Announcer;
+pub use dht::Config;
+pub use locator::Locator;
 
 pub mod announcer;
+pub mod dht;
 pub mod locator;
 
-struct DHTDiscovery {
+pub struct DHTDiscovery {
     announce: Option<Announcer>,
     locate: Option<Locator>,
+    config: Config,
 }
 
 impl DHTDiscovery {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
+            config,
             announce: None,
             locate: None,
         }
     }
 
-    pub fn with_locator(&mut self, duration: Duration) -> &mut Self {
+    pub async fn with_announcer(&mut self, duration: Duration) -> &mut Self {
+        let announcer = Announcer::new(&self.config).await;
+        self.announce = announcer.ok();
         self
     }
 
-    pub fn with_announcer(&mut self, port: u16) -> &mut Self {
+    pub async fn with_locator(&mut self, port: u16, duration: Duration) -> &mut Self {
+        let locator = Locator::new(&self.config).await;
+        self.locate = locator.ok();
         self
     }
 
@@ -72,6 +80,11 @@ impl Stream for DHTDiscovery {
 
 impl Default for DHTDiscovery {
     fn default() -> Self {
-        Self::new()
+        Self::new(Config {
+            bootstrap_servers: hyperswarm_dht::DEFAULT_BOOTSTRAP
+                .iter()
+                .map(|&z| z.to_owned())
+                .collect(),
+        })
     }
 }
