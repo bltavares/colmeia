@@ -1,8 +1,10 @@
 use anyhow::Context as ErrContext;
-use futures::{stream::StreamExt, Stream};
+use async_std::sync::RwLock;
+use futures::{stream::StreamExt, Future, Stream};
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use trust_dns_proto::rr::Name;
@@ -55,68 +57,88 @@ pub fn self_id() -> String {
 
 pub struct MdnsDiscovery {
     self_id: String,
-    announce: Option<announcer::Announcer>,
-    locate: Option<locator::Locator>,
+    announce: Arc<RwLock<Option<announcer::Announcer>>>,
+    locate: Arc<RwLock<Option<locator::Locator>>>,
 }
 
 impl MdnsDiscovery {
     pub fn new() -> Self {
         Self {
             self_id: self_id(),
-            announce: None,
-            locate: None,
+            announce: Default::default(),
+            locate: Default::default(),
         }
     }
 
     pub fn with_locator(&mut self, duration: Duration) -> &mut Self {
-        self.locate = crate::socket::create()
-            .map(|socket| locator::Locator::listen(socket, duration, self.self_id.as_bytes()))
-            .ok();
+        self.locate = Arc::new(RwLock::new(
+            crate::socket::create()
+                .map(|socket| locator::Locator::listen(socket, duration, self.self_id.as_bytes()))
+                .ok(),
+        ));
         self
     }
 
     pub fn with_announcer(&mut self, port: u16) -> &mut Self {
-        self.announce = crate::socket::create()
-            .map_err(anyhow::Error::from)
-            .map(|socket| announcer::Announcer::listen(socket, port, self.self_id.clone()))
-            .ok();
+        self.announce = Arc::new(RwLock::new(
+            crate::socket::create()
+                .map_err(anyhow::Error::from)
+                .map(|socket| announcer::Announcer::listen(socket, port, self.self_id.clone()))
+                .ok(),
+        ));
         self
     }
 
-    pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
-        if let Some(announcer) = &self.announce {
-            announcer.add_topic(topic).await?;
+    pub fn add_topic(&self, topic: Vec<u8>) -> impl Future<Output = anyhow::Result<()>> {
+        let announcer = self.announce.clone();
+        let locator = self.locate.clone();
+        async move {
+            if let Some(announcer) = announcer.read().await.as_ref() {
+                announcer.add_topic(topic.clone()).await?;
+            }
+            if let Some(locator) = locator.read().await.as_ref() {
+                locator.add_topic(topic).await?;
+            }
+            Ok(())
         }
-        if let Some(locator) = &self.locate {
-            locator.add_topic(topic).await?;
-        }
-        Ok(())
     }
 
-    pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
-        if let Some(announcer) = &self.announce {
-            announcer.remove_topic(topic).await?;
+    pub fn remove_topic(&self, topic: Vec<u8>) -> impl Future<Output = anyhow::Result<()>> {
+        let announcer = self.announce.clone();
+        let locator = self.locate.clone();
+        async move {
+            if let Some(announcer) = announcer.read().await.as_ref() {
+                announcer.remove_topic(topic.clone()).await?;
+            }
+            if let Some(locator) = locator.read().await.as_ref() {
+                locator.remove_topic(topic).await?;
+            }
+            Ok(())
         }
-        if let Some(locator) = &self.locate {
-            locator.remove_topic(topic).await?;
-        }
-        Ok(())
     }
 }
 
 impl Stream for MdnsDiscovery {
     type Item = (Vec<u8>, SocketAddr);
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        if let Some(ref mut announcer) = &mut self.announce {
-            let _ = announcer.poll_next_unpin(cx);
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        if let Some(mut announcer) = self.announce.try_write() {
+            if let Some(ref mut announcer) = announcer.as_mut() {
+                let _ = announcer.poll_next_unpin(cx);
+            }
         };
 
-        if let Some(ref mut locate) = &mut self.locate {
-            return locate.poll_next_unpin(cx);
+        if let Some(mut locate) = self.locate.try_write() {
+            if let Some(ref mut locate) = locate.as_mut() {
+                return locate.poll_next_unpin(cx);
+            }
         }
 
         Poll::Pending
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
     }
 }
 
