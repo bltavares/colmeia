@@ -80,8 +80,18 @@ Uses NOISE protocol and a different handshake.
 
 ## CLI binaries
 
+### Dump hash metadata
+
+```sh
+cargo run --bin colmeia-url-meta -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
+```
+
 ```txt
-Local dat2: be41e3d43d054982e14dfc60281d9d4425ab5d4b0b280a355b7927869ca08fc5
+Valid public key.
+Public Hexa     b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
+Public Bytes    [180, 94, 202, 12, 223, 51, 25, 88, 33, 185, 77, 195, 131, 100, 96, 6, 88, 100, 235, 214, 33, 201, 160, 90, 168, 197, 70, 152, 200, 179, 136, 182]
+Discovery Hexa  b172d7304b7df9d539b67ca100a1930ae102111fc253cf784e649231956a9b9c
+Discovery Bytes [177, 114, 215, 48, 75, 125, 249, 213, 57, 182, 124, 161, 0, 161, 147, 10, 225, 2, 17, 31, 194, 83, 207, 120, 78, 100, 146, 49, 149, 106, 155, 156]
 ```
 
 ### Find a local peer
@@ -89,7 +99,7 @@ Local dat2: be41e3d43d054982e14dfc60281d9d4425ab5d4b0b280a355b7927869ca08fc5
 [colmeia-mdns](./colmeia-bins/src/bin/colmeia-hyperswarm-mdns.rs)
 
 ```sh
-RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 8000
+RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6 8000
 ```
 
 ### Connect and troubleshoot a peer
@@ -97,7 +107,7 @@ RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- 7e5998407b3d9dbb94db21
 [colmeia-nc](./colmeia-bins/src/bin/colmeia-nc.rs)
 
 ```sh
-RUST_LOG=debug cargo run --bin colmeia-nc -- 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5 127.0.0.1:3282
+RUST_LOG=debug cargo run --bin colmeia-nc -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6 127.0.0.1:3282
 ```
 
 ### Clone from a single host

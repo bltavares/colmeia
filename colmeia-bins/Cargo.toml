@@ -8,6 +8,7 @@ edition = '2018'
 env_logger = '*'
 log = '*'
 hex = '*'
+ed25519-dalek = '*'
 
 [dependencies.async-std]
 version = '1.9.0'
