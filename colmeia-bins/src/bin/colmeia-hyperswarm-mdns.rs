@@ -75,7 +75,7 @@ fn main() {
                 log::debug!("registering topic");
                 mdns.write()
                     .await
-                    .add_topic(&topic)
+                    .add_topic(topic)
                     .await
                     .expect("could not write topic");
                 log::debug!("topic registered");
@@ -88,7 +88,7 @@ fn main() {
             log::debug!("sopping cli");
             mdns.write()
                 .await
-                .remove_topic(&topic)
+                .remove_topic(topic)
                 .await
                 .expect("failed to remove topic");
             log::debug!("stoped cli");
