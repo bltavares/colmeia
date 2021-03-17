@@ -1,6 +1,6 @@
 use anyhow::Context;
 use async_std::{sync::RwLock, task};
-use futures::{SinkExt, Stream, StreamExt};
+use futures::{Future, SinkExt, Stream, StreamExt};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -115,15 +115,22 @@ impl Locator {
         }
     }
 
-    pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
-        let value = crate::hash_as_domain_name(topic)?;
-        self.topics.write().await.insert(topic.to_vec(), value);
-        Ok(())
+    pub fn add_topic(&self, topic: Vec<u8>) -> impl Future<Output = anyhow::Result<()>> {
+        let topics = self.topics.clone();
+
+        async move {
+            let value = crate::hash_as_domain_name(&topic)?;
+            topics.write().await.insert(topic, value);
+            Ok(())
+        }
     }
 
-    pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
-        self.topics.write().await.remove(topic);
-        Ok(())
+    pub fn remove_topic(&self, topic: Vec<u8>) -> impl Future<Output = anyhow::Result<()>> {
+        let topics = self.topics.clone();
+        async move {
+            topics.write().await.remove(&topic);
+            Ok(())
+        }
     }
 }
 

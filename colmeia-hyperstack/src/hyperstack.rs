@@ -71,7 +71,7 @@ where
         let mut mdns = colmeia_hyperswarm_mdns::MdnsDiscovery::new();
         mdns.with_announcer(self.listen_address.port())
             .with_locator(Duration::from_secs(60));
-        mdns.add_topic(&hypercore_protocol::discovery_key(self.key.as_bytes()))
+        mdns.add_topic(hypercore_protocol::discovery_key(self.key.as_bytes()))
             .await?;
         Ok(mdns)
     }
