@@ -97,7 +97,7 @@ impl Announcer {
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
         let query = query.port(1000); // TODO: port
-        dbg!(self.swarm.write().await.announce(query)); // TODO: spawn await on io pool
+        self.swarm.write().await.announce(query); // TODO: spawn await on io pool
         self.topics.write().await.insert(topic.to_vec());
         Ok(())
     }
