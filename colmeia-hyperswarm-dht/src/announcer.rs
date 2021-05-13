@@ -1,4 +1,4 @@
-use async_std::{sync::RwLock, task};
+use async_std::{future, sync::RwLock, task};
 use futures::{channel::mpsc, FutureExt, SinkExt, Stream, StreamExt};
 use hyperswarm_dht::{HyperDht, QueryOpts};
 use std::{

@@ -41,7 +41,10 @@ Uses NOISE protocol and a different handshake.
   - [x] `Mdns`: announces and find dat in the network
   - [ ] Tests
   - [ ] All protocol 1:1
-- [ ] `colmeia-dht`: Interop with hypwerswarm dht infrastructure (:eyes: <https://github.com/mattsse/hyperswarm-dht>)
+- [x] `colmeia-dht`: Interop with hypwerswarm dht infrastructure (:eyes: <https://github.com/mattsse/hyperswarm-dht>)
+  - [x] `Locator`: stream to find dat members in the network
+  - [x] `Announcer`: stream that announces a dat in the network
+  - [x] `Dht`: announces and find dat in the network
   - [ ] Tests
   - [ ] All protocol 1:1
 
@@ -80,6 +83,20 @@ Uses NOISE protocol and a different handshake.
 
 ## CLI binaries
 
+### Server
+
+Start the web service using `colmeiad`:
+
+```sh
+cargo run -p colmeiad -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
+```
+
+You be able to get the information about the blocks on `/`
+
+```sh
+curl -v http://localhost:8080
+```
+
 ### Dump hash metadata
 
 ```sh
@@ -114,6 +131,20 @@ RUST_LOG=debug cargo run --bin colmeia-nc -- b45eca0cdf33195821b94dc383646006586
 
 ```sh
 RUST_LOG=debug cargo run --bin colmeia-clone -- 192.168.15.173:3282 dat://6268b99fbacacea49c6bc3d4776b606db2aeadb3fa831342ba9f70d55c98929f
+```
+
+### Test discovery mechanisms
+
+#### MDNS
+
+```sh
+cargo run --bin colmeia-hyperswarm-mdns -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6 8000
+```
+
+#### DHT
+
+```sh
+cargo run --bin colmeia-hyperswarm-dht -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
 ```
 
 ## Platforms
@@ -203,3 +234,8 @@ Run and `scp` the binaries on `target/mips-unknown-linux-musl`:
 ```sh
  cross build --target mips-unknown-linux-musl
  ```
+
+## Other hypercores to test
+
+- `94f0cab7f60fcc2a711df11c85db5e0594d11e8a3efd04a06f46a3c34d03c418`
+- `b282d5efe484143816362d33b3f9b3ea45ecfb8a6ada97e278fdfdc6a725e22f`

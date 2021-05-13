@@ -1,6 +1,7 @@
 use std::{io, net::SocketAddr};
 
 use async_std::net::UdpSocket;
+use futures::StreamExt;
 use hyperswarm_dht::{DhtConfig, HyperDht};
 
 pub struct Config {
