@@ -11,7 +11,7 @@ log = '0.4.14'
 
 [dependencies.hyperswarm-dht]
 git = 'https://github.com/bltavares/hyperswarm-dht'
-branch = 'update-ed25519-dalek'
+branch = 'wip'
 
 [dependencies.async-std]
 version = '1.9.0'

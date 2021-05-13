@@ -1518,7 +1518,7 @@ dependencies = [
 [[package]]
 name = "hyperswarm-dht"
 version = "0.1.0"
-source = "git+https://github.com/bltavares/hyperswarm-dht?branch=update-ed25519-dalek#3646ee540205c15ca3869c635f6187307df49cc2"
+source = "git+https://github.com/bltavares/hyperswarm-dht?branch=wip#0677030b7aafc30cec464b0cf31d8df3f2496cf9"
 dependencies = [
  "anyhow",
  "arrayvec 0.5.2",

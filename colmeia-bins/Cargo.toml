@@ -19,7 +19,7 @@ git = 'https://github.com/Frando/hypercore-protocol-rs'
 
 [dependencies.hyperswarm-dht]
 git = 'https://github.com/bltavares/hyperswarm-dht'
-branch = 'update-ed25519-dalek'
+branch = 'wip'
 
 [dependencies.colmeia-hyperswarm-mdns]
 path = '../colmeia-hyperswarm-mdns'
