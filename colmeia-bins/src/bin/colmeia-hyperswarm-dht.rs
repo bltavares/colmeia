@@ -23,7 +23,7 @@ fn main() {
                 .collect()
         });
 
-    let _duration = env::args()
+    let duration = env::args()
         .nth(3)
         .unwrap_or_else(|| "10".into())
         .parse::<u64>()
@@ -33,17 +33,22 @@ fn main() {
 
     let key = hyper_hash.parse_from_hash().expect("could not parse hash");
 
-    let config = Config { bootstrap_servers };
+    let config = Config {
+        bootstrap_servers,
+        ..Default::default()
+    };
+
+    let port = 2323;
 
     task::block_on(async move {
         log::info!("Starting up");
 
         let topic = hypercore_protocol::discovery_key(key.as_bytes());
-        let announcer = Announcer::new(&config)
+        let announcer = Announcer::listen(&config, duration, port)
             .await
             .expect("could not start announcer");
 
-        let mut locator = Locator::new(&config)
+        let mut locator = Locator::listen(&config, duration)
             .await
             .expect("Could not start locator");
 

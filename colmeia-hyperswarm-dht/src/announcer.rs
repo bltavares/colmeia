@@ -1,4 +1,4 @@
-use async_std::{future, sync::RwLock, task};
+use async_std::{sync::RwLock, task};
 use futures::{channel::mpsc, FutureExt, SinkExt, Stream, StreamExt};
 use hyperswarm_dht::{HyperDht, QueryOpts};
 use std::{
@@ -17,20 +17,24 @@ use crate::dht::{dht, Config};
 pub struct Announcer {
     swarm: Arc<RwLock<HyperDht>>,
     topics: Arc<RwLock<HashSet<Vec<u8>>>>,
-    _listener_task: task::JoinHandle<()>,
+    port: u16,
     receiver: mpsc::UnboundedReceiver<(Vec<u8>, SocketAddr)>,
+    _job: task::JoinHandle<()>,
 }
 
-// TODO impl Drop unnanaounce
+// TODO impl Drop unnanaounce (async drop)
 impl Announcer {
-    pub async fn new(config: &Config) -> io::Result<Self> {
+    /// # Errors
+    ///
+    /// Will return `Err` if it failed to bind to the socket on config
+    pub async fn listen(config: &Config, duration: Duration, port: u16) -> io::Result<Self> {
         let swarm = dht(config).await?;
         let swarm = Arc::new(RwLock::new(swarm));
-        let topics: Arc<RwLock<HashSet<Vec<u8>>>> = Default::default();
+        let topics: Arc<RwLock<HashSet<Vec<u8>>>> = Arc::default();
 
         let (mut sender, receiver) = mpsc::unbounded();
 
-        let _listener_task = {
+        let job = {
             let swarm = swarm.clone();
             let topics = topics.clone();
             task::spawn(async move {
@@ -70,13 +74,11 @@ impl Announcer {
                         }
                     }
 
-                    // TODO config
-                    if timer.elapsed() > Duration::from_secs(10) {
+                    if timer.elapsed() > duration {
                         log::debug!("Broadcasting new announcement of current topics");
                         for topic in topics.read().await.iter() {
                             if let Ok(query) = QueryOpts::try_from(&topic[..]) {
-                                // TODO config
-                                let query = query.port(1000);
+                                let query = query.port(u32::from(port));
                                 swarm.write().await.announce(query);
                             }
                         }
@@ -89,22 +91,29 @@ impl Announcer {
         Ok(Self {
             topics,
             swarm,
-            _listener_task,
+            port,
             receiver,
+            _job: job,
         })
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` it failed to register the topics due to concurrent writes
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
-        let query = query.port(1000); // TODO: port
+        let query = query.port(u32::from(self.port));
         self.swarm.write().await.announce(query); // TODO: spawn await on io pool
         self.topics.write().await.insert(topic.to_vec());
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` it failed to remove the topics due to concurrent writes
     pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
-        let query = query.port(1000); // TODO: port
+        let query = query.port(u32::from(self.port));
         self.swarm.write().await.unannounce(query); // TODO: spawn await on io pool
         self.topics.write().await.remove(topic);
         Ok(())

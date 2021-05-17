@@ -61,6 +61,7 @@ pub struct MdnsDiscovery {
     locate: Arc<RwLock<Option<locator::Locator>>>,
 }
 
+// TODO Optmize to share socket across both announcer & locator
 impl MdnsDiscovery {
     pub fn new() -> Self {
         Self {

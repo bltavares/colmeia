@@ -16,20 +16,23 @@ use crate::dht::{dht, Config};
 
 pub struct Locator {
     topics: Arc<RwLock<HashSet<Vec<u8>>>>,
-    _job: task::JoinHandle<()>,
     swarm: Arc<RwLock<hyperswarm_dht::HyperDht>>,
     receiver: mpsc::UnboundedReceiver<(Vec<u8>, SocketAddr)>,
+    _job: task::JoinHandle<()>,
 }
 
 impl Locator {
-    pub async fn new(config: &Config) -> io::Result<Self> {
+    /// # Errors
+    ///
+    /// Will return `Err` if it failed to bind to the socket on config
+    pub async fn listen(config: &Config, duration: Duration) -> io::Result<Self> {
         let swarm = dht(config).await?;
         let swarm = Arc::new(RwLock::new(swarm));
-        let topics: Arc<RwLock<HashSet<Vec<u8>>>> = Default::default();
+        let topics: Arc<RwLock<HashSet<Vec<u8>>>> = Arc::default();
 
         let (mut sender, receiver) = mpsc::unbounded();
 
-        let _job = {
+        let job = {
             let swarm = swarm.clone();
             let topics = topics.clone();
             task::spawn(async move {
@@ -55,8 +58,7 @@ impl Locator {
                         }
                     }
 
-                    // TODO config
-                    if timer.elapsed() > Duration::from_secs(10) {
+                    if timer.elapsed() > duration {
                         log::debug!("Broadcasting new lookup of current topics");
                         for topic in topics.read().await.iter() {
                             if let Ok(query) = QueryOpts::try_from(&topic[..]) {
@@ -72,11 +74,14 @@ impl Locator {
         Ok(Self {
             topics,
             swarm,
-            _job,
             receiver,
+            _job: job,
         })
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` it failed to register the topics due to concurrent writes
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
         self.swarm.write().await.lookup(query);
@@ -84,6 +89,9 @@ impl Locator {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` it failed to remove the topics due to concurrent writes
     pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         self.topics.write().await.remove(topic);
         Ok(())

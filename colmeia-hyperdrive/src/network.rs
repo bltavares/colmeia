@@ -68,7 +68,7 @@ pub async fn replicate_hyperdrive<C, Storage>(
                 }
             }
             HyperdriveEvents::Client(Ok(proto::Event::Channel(channel))) => {
-                // TODO don't rely on channel event oerder - check the keys to see if they match
+                // TODO don't rely on channel event order - check the keys to see if they match
                 if let Some(JobHolder::Sender(sender)) = metadata_job.take() {
                     log::debug!("initializing metadata feed");
                     let feed = hyperdrive.read().await.metadata.clone();
@@ -101,7 +101,7 @@ pub async fn replicate_hyperdrive<C, Storage>(
             HyperdriveEvents::Client(Err(_)) => {
                 break;
             }
-            // TODO listen to metadata ondata evnt to initialize content feed
+            // TODO listen to metadata ondata event to initialize content feed
             HyperdriveEvents::Metadata(_) => {
                 if let Some(JobHolder::Sender(_)) = &content_job {
                     // Initialize the content feed if we have no job started

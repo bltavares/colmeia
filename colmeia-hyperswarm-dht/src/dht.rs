@@ -1,11 +1,14 @@
-use std::{io, net::SocketAddr};
+use std::{
+    io,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+};
 
 use async_std::net::UdpSocket;
-use futures::StreamExt;
 use hyperswarm_dht::{DhtConfig, HyperDht};
 
 pub struct Config {
     pub bootstrap_servers: Vec<String>,
+    pub bind_address: SocketAddr,
 }
 
 impl Default for Config {
@@ -15,14 +18,13 @@ impl Default for Config {
                 .iter()
                 .map(|&z| z.to_owned())
                 .collect(),
+            bind_address: SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0).into(),
         }
     }
 }
 
 pub(crate) async fn dht(config: &Config) -> io::Result<HyperDht> {
-    // TODO config
-    let bind_address: SocketAddr = ([0, 0, 0, 0], 0).into();
-    let socket = UdpSocket::bind(bind_address).await?;
+    let socket = UdpSocket::bind(config.bind_address).await?;
     let dht_config = DhtConfig::default()
         .set_socket(socket)
         .set_bootstrap_nodes(&config.bootstrap_servers)
