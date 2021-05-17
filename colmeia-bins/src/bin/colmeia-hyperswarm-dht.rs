@@ -28,6 +28,7 @@ fn main() {
         .unwrap_or_else(|| "10".into())
         .parse::<u64>()
         .expect("Could not parse duration into a number");
+    let duration = Duration::from_secs(duration);
 
     env_logger::init();
 
@@ -48,7 +49,7 @@ fn main() {
             .await
             .expect("could not start announcer");
 
-        let mut locator = Locator::listen(&config, duration)
+        let mut locator = Locator::listen(&config, Duration::from_secs(1))
             .await
             .expect("Could not start locator");
 

@@ -20,7 +20,7 @@ fn main() {
     }
 }
 
-fn invalid_public_key(e: HashParserError) -> () {
+fn invalid_public_key(e: HashParserError) {
     match e {
         HashParserError::InvalidHexHash(_) => {
             eprintln!("Invalid hyper url");
