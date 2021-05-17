@@ -88,7 +88,7 @@ Uses NOISE protocol and a different handshake.
 Start the web service using `colmeiad`:
 
 ```sh
-cargo run -p colmeiad -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
+RUST_LOG=debug cargo run -p colmeiad -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
 ```
 
 You be able to get the information about the blocks on `/`
@@ -138,13 +138,13 @@ RUST_LOG=debug cargo run --bin colmeia-clone -- 192.168.15.173:3282 dat://6268b9
 #### MDNS
 
 ```sh
-cargo run --bin colmeia-hyperswarm-mdns -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6 8000
+RUST_LOG=debug cargo run --bin colmeia-hyperswarm-mdns -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6 8000
 ```
 
 #### DHT
 
 ```sh
-cargo run --bin colmeia-hyperswarm-dht -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
+RUST_LOG=debug cargo run --bin colmeia-hyperswarm-dht -- b45eca0cdf33195821b94dc3836460065864ebd621c9a05aa8c54698c8b388b6
 ```
 
 ## Platforms
