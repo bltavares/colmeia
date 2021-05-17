@@ -25,7 +25,7 @@ fn main() {
 
     let duration = env::args()
         .nth(3)
-        .unwrap_or_else(|| "10".into())
+        .unwrap_or_else(|| "30".into())
         .parse::<u64>()
         .expect("Could not parse duration into a number");
     let duration = Duration::from_secs(duration);
@@ -49,7 +49,7 @@ fn main() {
             .await
             .expect("could not start announcer");
 
-        let mut locator = Locator::listen(&config, Duration::from_secs(1))
+        let mut locator = Locator::listen(&config, Duration::from_secs(10))
             .await
             .expect("Could not start locator");
 
@@ -66,7 +66,7 @@ fn main() {
             .expect("Could not exec find topic");
 
         let result = locator.next().await;
-        log::debug!("Found peer: {:?}", result);
+        log::info!("Found peer: {:?}", result);
 
         log::info!("Remove topic");
         announcer
