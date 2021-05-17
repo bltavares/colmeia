@@ -114,12 +114,15 @@ where
             let discovery = match discovery {
                 Some(mut discovery) => task::spawn(async move {
                     while let Some((_, peer)) = discovery.next().await {
+                        log::debug!("Attempting to connect to {:?}", peer);
+
                         if !discovery_connected_peers.read().await.contains(&peer) {
                             let driver = discovery_driver.clone();
                             let connected_peers = discovery_connected_peers.clone();
 
                             task::spawn(async move {
                                 if let Ok(tcp_stream) = TcpStream::connect(peer).await {
+                                    log::debug!("Connected to {:?} successfully", peer);
                                     connected_peers.write().await.insert(peer);
                                     let client = ProtocolBuilder::new(true).connect(tcp_stream);
                                     colmeia_hyperdrive::replicate_hyperdrive(
@@ -144,6 +147,8 @@ where
                 if let Ok(listener) = listener {
                     loop {
                         if let Ok((tcp_stream, remote_addrs)) = listener.accept().await {
+                            log::debug!("Received connection from {:?}", remote_addrs);
+
                             let driver = listen_driver.clone();
                             let connected_peers = listen_connected_peers.clone();
                             if !connected_peers.read().await.contains(&remote_addrs) {
