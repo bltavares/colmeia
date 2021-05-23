@@ -1,10 +1,9 @@
 use async_std::{sync::RwLock, task};
-use futures::{channel::mpsc, FutureExt, SinkExt, Stream, StreamExt};
-use hyperswarm_dht::{HyperDht, QueryOpts};
+use futures::{channel::mpsc, SinkExt, Stream, StreamExt};
+use hyperswarm_dht::QueryOpts;
 use std::{
     collections::HashSet,
     convert::{TryFrom, TryInto},
-    io,
     net::SocketAddr,
     pin::Pin,
     sync::Arc,
@@ -12,42 +11,33 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::dht::{dht, Config};
+use crate::dht::{BroadcastChannel, Outbound};
 
 pub struct Announcer {
-    swarm: Arc<RwLock<HyperDht>>,
+    channel: BroadcastChannel,
     topics: Arc<RwLock<HashSet<Vec<u8>>>>,
     port: u16,
     receiver: mpsc::UnboundedReceiver<(Vec<u8>, SocketAddr)>,
-    _job: task::JoinHandle<()>,
 }
 
 // TODO impl Drop unnanaounce (async drop)
 impl Announcer {
-    /// # Errors
-    ///
-    /// Will return `Err` if it failed to bind to the socket on config
-    pub async fn listen(config: &Config, duration: Duration, port: u16) -> io::Result<Self> {
-        let swarm = dht(config).await?;
-        let swarm = Arc::new(RwLock::new(swarm));
+    pub fn listen_to_channel(channel: BroadcastChannel, duration: Duration, port: u16) -> Self {
         let topics: Arc<RwLock<HashSet<Vec<u8>>>> = Arc::default();
 
         let (mut sender, receiver) = mpsc::unbounded();
 
-        let job = {
-            let swarm = swarm.clone();
+        let _job = {
             let topics = topics.clone();
+            let mut messages = channel.receive.activate_cloned();
+            let send = channel.send.clone();
             task::spawn(async move {
                 let mut timer = std::time::Instant::now();
 
                 loop {
-                    if let Some(Some(event)) = swarm.write().await.next().now_or_never() {
+                    if let Ok(event) = messages.recv().await {
                         match event {
-                            hyperswarm_dht::HyperDhtEvent::AnnounceResult {
-                                peers,
-                                topic,
-                                query_id,
-                            } => {
+                            crate::dht::Inbound::Announce { peers, topic } => {
                                 let topic = topic.to_vec();
                                 for peer in peers
                                     .iter()
@@ -59,14 +49,10 @@ impl Announcer {
                                         log::warn!("Could not send peer: {:?}", e);
                                     }
                                 }
-                                log::debug!("announced {:?}", (peers, topic, query_id));
+                                log::debug!("announced {:?}", (peers, topic));
                             }
-                            hyperswarm_dht::HyperDhtEvent::UnAnnounceResult {
-                                peers,
-                                topic,
-                                query_id,
-                            } => {
-                                log::debug!("un-announced {:?}", (peers, topic, query_id));
+                            crate::dht::Inbound::UnAnnounce { peers, topic } => {
+                                log::debug!("un-announced {:?}", (peers, topic));
                             }
                             e => {
                                 log::debug!("another event {:?}", e);
@@ -79,7 +65,8 @@ impl Announcer {
                         for topic in topics.read().await.iter() {
                             if let Ok(query) = QueryOpts::try_from(&topic[..]) {
                                 let query = query.port(u32::from(port));
-                                swarm.write().await.announce(query);
+                                let result = send.broadcast(Outbound::Announce(query)).await;
+                                log::debug!("broadcast {:?}", result);
                             }
                         }
                         timer = Instant::now();
@@ -88,13 +75,12 @@ impl Announcer {
             })
         };
 
-        Ok(Self {
+        Self {
             topics,
-            swarm,
+            channel,
             port,
             receiver,
-            _job: job,
-        })
+        }
     }
 
     /// # Errors
@@ -103,7 +89,7 @@ impl Announcer {
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
         let query = query.port(u32::from(self.port));
-        self.swarm.write().await.announce(query); // TODO: spawn await on io pool
+        self.channel.send.broadcast(Outbound::Announce(query)).await?;
         self.topics.write().await.insert(topic.to_vec());
         Ok(())
     }
@@ -114,7 +100,10 @@ impl Announcer {
     pub async fn remove_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
         let query = query.port(u32::from(self.port));
-        self.swarm.write().await.unannounce(query); // TODO: spawn await on io pool
+        self.channel
+            .send
+            .broadcast(Outbound::UnAnnounce(query))
+            .await?;
         self.topics.write().await.remove(topic);
         Ok(())
     }

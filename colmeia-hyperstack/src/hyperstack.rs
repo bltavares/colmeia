@@ -6,6 +6,7 @@ use async_std::{
     task,
 };
 use colmeia_hyperdrive::Hyperdrive;
+use colmeia_hyperswarm_dht::Config;
 use ed25519_dalek::PublicKey;
 use futures::{Future, Stream, StreamExt};
 use hypercore_protocol::ProtocolBuilder;
@@ -77,11 +78,9 @@ where
     }
 
     pub async fn dht(&self) -> anyhow::Result<impl Stream<Item = (Vec<u8>, SocketAddr)>> {
-        let mut dht = colmeia_hyperswarm_dht::DHTDiscovery::default();
+        let mut dht = colmeia_hyperswarm_dht::DHTDiscovery::listen(Config::default()).await?;
         dht.with_announcer(self.listen_address.port(), Duration::from_secs(60))
-            .await
-            .with_locator(Duration::from_secs(60)) // TODO: config
-            .await;
+            .with_locator(Duration::from_secs(60)); // TODO: config
         dht.add_topic(&hypercore_protocol::discovery_key(self.key.as_bytes()))
             .await?;
         Ok(dht)
