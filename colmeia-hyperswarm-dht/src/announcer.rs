@@ -35,7 +35,7 @@ impl Announcer {
                 let mut timer = std::time::Instant::now();
 
                 loop {
-                    if let Ok(event) = messages.recv().await {
+                    if let Ok(event) = messages.try_recv() {
                         match event {
                             crate::dht::Inbound::Announce { peers, topic } => {
                                 let topic = topic.to_vec();
@@ -66,7 +66,7 @@ impl Announcer {
                             if let Ok(query) = QueryOpts::try_from(&topic[..]) {
                                 let query = query.port(u32::from(port));
                                 let result = send.broadcast(Outbound::Announce(query)).await;
-                                log::debug!("broadcast {:?}", result);
+                                log::trace!("broadcast {:?}", result);
                             }
                         }
                         timer = Instant::now();
@@ -89,7 +89,10 @@ impl Announcer {
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
         let query = query.port(u32::from(self.port));
-        self.channel.send.broadcast(Outbound::Announce(query)).await?;
+        self.channel
+            .send
+            .broadcast(Outbound::Announce(query))
+            .await?;
         self.topics.write().await.insert(topic.to_vec());
         Ok(())
     }

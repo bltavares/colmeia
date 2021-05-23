@@ -36,7 +36,7 @@ impl Locator {
                 let mut timer = std::time::Instant::now();
 
                 loop {
-                    if let Ok(event) = messages.recv().await {
+                    if let Ok(event) = messages.try_recv() {
                         match event {
                             Inbound::Lookup(lookup) => {
                                 let topic = lookup.topic.to_vec();
@@ -58,8 +58,8 @@ impl Locator {
                         log::debug!("Broadcasting new lookup of current topics");
                         for topic in topics.read().await.iter() {
                             if let Ok(query) = QueryOpts::try_from(&topic[..]) {
-                                let result = send.broadcast(Outbound::Lookup(query));
-                                log::debug!("broadcast result {:?}", result);
+                                let result = send.broadcast(Outbound::Lookup(query)).await;
+                                log::trace!("broadcast result {:?}", result);
                             }
                         }
                         timer = Instant::now();

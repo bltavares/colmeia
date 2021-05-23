@@ -8,7 +8,6 @@ edition = '2018'
 anyhow = '1.0.38'
 futures = '0.3.12'
 log = '0.4.14'
-async-broadcast = '0.3.1'
 
 [dependencies.hyperswarm-dht]
 git = 'https://github.com/bltavares/hyperswarm-dht'
@@ -17,4 +16,8 @@ branch = 'wip'
 [dependencies.async-std]
 version = '1.9.0'
 features = ['unstable']
+
+[dependencies.async-broadcast]
+git = "https://github.com/bltavares/async-broadcast"
+branch = "master"
 

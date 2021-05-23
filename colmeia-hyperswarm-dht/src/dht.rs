@@ -39,7 +39,7 @@ pub(crate) async fn dht(config: &Config) -> io::Result<HyperDht> {
     Ok(swarm)
 }
 
-const BUFFER_SIZE: usize = 999;
+const BUFFER_SIZE: usize = 1;
 #[derive(Debug, Clone)]
 pub enum Outbound {
     Lookup(QueryOpts),
@@ -77,8 +77,6 @@ impl BroadcastChannel {
             task::spawn(async move {
                 loop {
                     if let Ok(outbound) = outbound_receiver.recv().await {
-                        log::error!("looping");
-
                         match outbound {
                             Outbound::Lookup(query) => {
                                 swarm.write().await.lookup(query);
@@ -101,8 +99,6 @@ impl BroadcastChannel {
                 loop {
                     let event = swarm.write().await.next().now_or_never();
                     if let Some(Some(event)) = event {
-                        log::warn!("looping");
-
                         match event {
                             HyperDhtEvent::Bootstrapped { stats } => {
                                 log::debug!("Swarm bootstrapped {:?}", stats)

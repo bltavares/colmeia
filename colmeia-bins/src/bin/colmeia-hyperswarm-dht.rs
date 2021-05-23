@@ -48,7 +48,9 @@ fn main() {
 
         let swarm = DHTDiscovery::listen(config).await;
         let mut swarm = swarm.expect("Could not bind socket");
-        swarm.with_announcer(port, duration).with_locator(duration);
+        swarm
+            .with_announcer(port, duration)
+            .with_locator(Duration::from_secs(10));
 
         log::info!("Adding topic");
         swarm
@@ -57,11 +59,6 @@ fn main() {
             .expect("could not write topic");
 
         log::info!("Finding topic");
-        swarm
-            .add_topic(&topic)
-            .await
-            .expect("Could not exec find topic");
-
         let result = swarm.next().await;
         log::info!("Found peer: {:?}", result);
 
