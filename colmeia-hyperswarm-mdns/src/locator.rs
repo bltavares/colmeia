@@ -160,10 +160,10 @@ fn select_ip_from_hyperswarm_mdns_response(
         let port = srv_data.port();
         if srv_data.target() == &*crate::UNSPECIFIED_NAME {
             return Some(SocketAddr::new(IpAddr::V4(*origin_ip), port));
-        } else {
-            let target_ipv4 = srv_data.target().to_utf8().parse::<Ipv4Addr>().ok()?;
-            return Some(SocketAddr::new(IpAddr::V4(target_ipv4), port));
         }
+
+        let target_ipv4 = srv_data.target().to_utf8().parse::<Ipv4Addr>().ok()?;
+        return Some(SocketAddr::new(IpAddr::V4(target_ipv4), port));
     }
     None
 }

@@ -2,6 +2,7 @@ use anyhow::Context;
 use async_std::sync::RwLock;
 use futures::{SinkExt, StreamExt};
 use hypercore_protocol as proto;
+use std::convert::TryFrom;
 use std::io;
 use std::sync::Arc;
 
@@ -52,12 +53,12 @@ where
             nodes: message
                 .nodes
                 .iter()
-                .map(|node| hypercore::Node::new(node.index, node.hash.to_vec(), node.size))
+                .map(|node| hypercore::Node::new(node.index, node.hash.clone(), node.size))
                 .collect(),
             signature: message
                 .signature
                 .clone()
-                .and_then(|s| hypercore::Signature::from_bytes(&s).ok()),
+                .and_then(|s| hypercore::Signature::try_from(&s[..]).ok()),
         };
 
         self.feed
@@ -87,6 +88,7 @@ where
                 // self.remoteLength = self.remoteBitfield.last() + 1;
             }
         } else {
+            #[allow(clippy::cast_possible_truncation)]
             let mut start = message.start as usize;
             let len = message.length.unwrap_or(1);
             for _ in 0..len {
@@ -107,7 +109,7 @@ where
         for index in 0..=message.start {
             let request = proto::schema::Request {
                 index,
-                ..Default::default()
+                ..proto::schema::Request::default()
             };
             self.channel.request(request).await?;
         }
@@ -128,10 +130,11 @@ where
             // where this is contained in
             let have = proto::schema::Have {
                 start: feed_length as u64,
-                ..Default::default()
+                ..proto::schema::Have::default()
             };
             self.channel.have(have).await?;
         }
+        #[allow(clippy::cast_possible_truncation)]
         let rle = self
             .feed
             .read()
@@ -148,6 +151,9 @@ where
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Returns the error if any of the protocol operations fail
     pub async fn replicate(
         &mut self,
         mut rx: impl futures::Sink<Emit> + Unpin + Send + 'static,

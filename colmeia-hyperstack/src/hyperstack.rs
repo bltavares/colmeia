@@ -6,6 +6,7 @@ use async_std::{
     task,
 };
 use colmeia_hyperdrive::Hyperdrive;
+use colmeia_hyperswarm_dht::Config;
 use ed25519_dalek::PublicKey;
 use futures::{Future, Stream, StreamExt};
 use hypercore_protocol::ProtocolBuilder;
@@ -70,10 +71,19 @@ where
     pub async fn lan(&self) -> anyhow::Result<impl Stream<Item = (Vec<u8>, SocketAddr)>> {
         let mut mdns = colmeia_hyperswarm_mdns::MdnsDiscovery::new();
         mdns.with_announcer(self.listen_address.port())
-            .with_locator(Duration::from_secs(60));
+            .with_locator(Duration::from_secs(60)); // TODO: config
         mdns.add_topic(hypercore_protocol::discovery_key(self.key.as_bytes()))
             .await?;
         Ok(mdns)
+    }
+
+    pub async fn dht(&self) -> anyhow::Result<impl Stream<Item = (Vec<u8>, SocketAddr)>> {
+        let mut dht = colmeia_hyperswarm_dht::DHTDiscovery::listen(Config::default()).await?;
+        dht.with_announcer(self.listen_address.port(), Duration::from_secs(60))
+            .with_locator(Duration::from_secs(60)); // TODO: config
+        dht.add_topic(&hypercore_protocol::discovery_key(self.key.as_bytes()))
+            .await?;
+        Ok(dht)
     }
 
     pub fn with_discovery(
@@ -103,12 +113,15 @@ where
             let discovery = match discovery {
                 Some(mut discovery) => task::spawn(async move {
                     while let Some((_, peer)) = discovery.next().await {
+                        log::debug!("Attempting to connect to {:?}", peer);
+
                         if !discovery_connected_peers.read().await.contains(&peer) {
                             let driver = discovery_driver.clone();
                             let connected_peers = discovery_connected_peers.clone();
 
                             task::spawn(async move {
                                 if let Ok(tcp_stream) = TcpStream::connect(peer).await {
+                                    log::debug!("Connected to {:?} successfully", peer);
                                     connected_peers.write().await.insert(peer);
                                     let client = ProtocolBuilder::new(true).connect(tcp_stream);
                                     colmeia_hyperdrive::replicate_hyperdrive(
@@ -133,6 +146,8 @@ where
                 if let Ok(listener) = listener {
                     loop {
                         if let Ok((tcp_stream, remote_addrs)) = listener.accept().await {
+                            log::debug!("Received connection from {:?}", remote_addrs);
+
                             let driver = listen_driver.clone();
                             let connected_peers = listen_connected_peers.clone();
                             if !connected_peers.read().await.contains(&remote_addrs) {

@@ -8,16 +8,24 @@ edition = '2018'
 env_logger = '*'
 log = '*'
 hex = '*'
+ed25519-dalek = '*'
 
 [dependencies.async-std]
-version = '1.6.2'
+version = '1.9.0'
 features = ['unstable']
 
 [dependencies.hypercore-protocol]
 git = 'https://github.com/Frando/hypercore-protocol-rs'
 
+[dependencies.hyperswarm-dht]
+git = 'https://github.com/bltavares/hyperswarm-dht'
+branch = 'wip'
+
 [dependencies.colmeia-hyperswarm-mdns]
 path = '../colmeia-hyperswarm-mdns'
+
+[dependencies.colmeia-hyperswarm-dht]
+path = '../colmeia-hyperswarm-dht'
 
 [dependencies.colmeia-hyperstack]
 path = '../colmeia-hyperstack'

@@ -1,4 +1,4 @@
-use async_std::{sync::RwLock, task};
+use async_std::{prelude::StreamExt, sync::RwLock, task};
 use colmeia_hyperstack::{hyperdrive::Hyperdrive, utils::PublicKeyExt, Hyperstack};
 use futures::future::OptionFuture;
 use std::sync::Arc;
@@ -65,7 +65,7 @@ where
 
 #[async_std::main]
 async fn main() -> Result<(), std::io::Error> {
-    env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let key = name();
     let hash = key.parse_from_hash().expect("invalid hash argument");
@@ -77,13 +77,14 @@ async fn main() -> Result<(), std::io::Error> {
         .lan()
         .await
         .expect("could not add key to mdns discovery");
-    hyperstack.with_discovery(mdns);
+    let dht = hyperstack.dht().await.expect("could not start dht");
+    hyperstack.with_discovery(mdns.merge(dht));
 
     let job = task::spawn(hyperstack.replicate());
     let hyperdrive = hyperstack.hyperdrive();
 
     let mut app = tide::with_state(hyperdrive);
-    app.middleware(tide::log::LogMiddleware::new());
+    app.with(tide::log::LogMiddleware::new());
     app.at("/").get(get_info);
     app.listen("127.0.0.1:8080").await?;
     job.await;

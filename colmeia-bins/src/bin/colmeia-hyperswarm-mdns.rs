@@ -25,7 +25,7 @@ fn main() {
         .parse::<u64>()
         .expect("Could not parse duration into a number");
 
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let key = hyper_hash.parse_from_hash().expect("could not parse hash");
 

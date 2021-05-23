@@ -20,7 +20,7 @@ fn main() {
     // 1. receive ip:port as argument (eg: hashs and 192.168.137.1:58906)
     // 2. try to connect and hadhsake (with hypercore-protocol) (eg: 7e5998407b3d9dbb94db21ff50ad6f1b1d2c79e476fbaf9856c342eb4382e7f5)
     // 3. Finalize with all working
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let key = name();
     let address = address();
