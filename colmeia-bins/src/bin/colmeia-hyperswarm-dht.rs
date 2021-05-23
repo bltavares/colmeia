@@ -25,12 +25,12 @@ fn main() {
 
     let duration = env::args()
         .nth(3)
-        .unwrap_or_else(|| "30".into())
+        .unwrap_or_else(|| "10".into())
         .parse::<u64>()
         .expect("Could not parse duration into a number");
     let duration = Duration::from_secs(duration);
 
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let key = hyper_hash.parse_from_hash().expect("could not parse hash");
 
@@ -38,8 +38,6 @@ fn main() {
         bootstrap_servers,
         ..Default::default()
     };
-
-    let port = 2323;
 
     task::block_on(async move {
         log::info!("Starting up");
@@ -49,8 +47,8 @@ fn main() {
         let swarm = DHTDiscovery::listen(config).await;
         let mut swarm = swarm.expect("Could not bind socket");
         swarm
-            .with_announcer(port, duration)
-            .with_locator(Duration::from_secs(10));
+            // .with_announcer(2323, duration)
+            .with_locator(duration);
 
         log::info!("Adding topic");
         swarm
