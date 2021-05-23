@@ -1,5 +1,7 @@
+use dht::BroadcastChannel;
 use futures::{Stream, StreamExt};
 use std::{
+    io,
     net::SocketAddr,
     pin::Pin,
     task::{Context, Poll},
@@ -17,29 +19,30 @@ pub mod locator;
 pub struct DHTDiscovery {
     announce: Option<Announcer>,
     locate: Option<Locator>,
-    config: Config,
+    channel: BroadcastChannel,
 }
 
-// TODO Optmize to share swarm client across both announcer & locator
 impl DHTDiscovery {
     #[must_use]
-    pub fn new(config: Config) -> Self {
-        Self {
-            config,
+    pub async fn listen(config: Config) -> io::Result<Self> {
+        let channel = BroadcastChannel::listen(&config).await?;
+
+        Ok(Self {
             announce: None,
             locate: None,
-        }
+            channel,
+        })
     }
 
-    pub async fn with_announcer(&mut self, port: u16, duration: Duration) -> &mut Self {
-        let announcer = Announcer::listen(&self.config, duration, port).await;
-        self.announce = announcer.ok();
+    pub fn with_announcer(&mut self, port: u16, duration: Duration) -> &mut Self {
+        let announcer = Announcer::listen_to_channel(self.channel.clone(), duration, port);
+        self.announce = Some(announcer);
         self
     }
 
-    pub async fn with_locator(&mut self, duration: Duration) -> &mut Self {
-        let locator = Locator::listen(&self.config, duration).await;
-        self.locate = locator.ok();
+    pub fn with_locator(&mut self, duration: Duration) -> &mut Self {
+        let locator = Locator::listen_to_channel(self.channel.clone(), duration);
+        self.locate = Some(locator);
         self
     }
 
@@ -83,11 +86,5 @@ impl Stream for DHTDiscovery {
         }
 
         Poll::Pending
-    }
-}
-
-impl Default for DHTDiscovery {
-    fn default() -> Self {
-        Self::new(Config::default())
     }
 }

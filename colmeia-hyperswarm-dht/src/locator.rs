@@ -1,10 +1,9 @@
 use async_std::{sync::RwLock, task};
-use futures::{channel::mpsc, FutureExt, SinkExt, Stream, StreamExt};
+use futures::{channel::mpsc, SinkExt, Stream, StreamExt};
 use hyperswarm_dht::QueryOpts;
 use std::{
     collections::HashSet,
     convert::{TryFrom, TryInto},
-    io,
     net::SocketAddr,
     pin::Pin,
     sync::Arc,
@@ -12,36 +11,34 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::dht::{dht, Config};
+use crate::dht::{BroadcastChannel, Inbound, Outbound};
 
 pub struct Locator {
     topics: Arc<RwLock<HashSet<Vec<u8>>>>,
-    swarm: Arc<RwLock<hyperswarm_dht::HyperDht>>,
+    channel: BroadcastChannel,
     receiver: mpsc::UnboundedReceiver<(Vec<u8>, SocketAddr)>,
-    _job: task::JoinHandle<()>,
 }
 
 impl Locator {
     /// # Errors
     ///
     /// Will return `Err` if it failed to bind to the socket on config
-    pub async fn listen(config: &Config, duration: Duration) -> io::Result<Self> {
-        let swarm = dht(config).await?;
-        let swarm = Arc::new(RwLock::new(swarm));
+    pub fn listen_to_channel(channel: BroadcastChannel, duration: Duration) -> Self {
         let topics: Arc<RwLock<HashSet<Vec<u8>>>> = Arc::default();
 
         let (mut sender, receiver) = mpsc::unbounded();
 
-        let job = {
-            let swarm = swarm.clone();
+        let _job = {
             let topics = topics.clone();
+            let mut messages = channel.receive.activate_cloned();
+            let send = channel.send.clone();
             task::spawn(async move {
                 let mut timer = std::time::Instant::now();
 
                 loop {
-                    if let Some(Some(event)) = swarm.write().await.next().now_or_never() {
+                    if let Ok(event) = messages.try_recv() {
                         match event {
-                            hyperswarm_dht::HyperDhtEvent::LookupResult { lookup, query_id } => {
+                            Inbound::Lookup(lookup) => {
                                 let topic = lookup.topic.to_vec();
                                 for peer in lookup.all_peers().copied() {
                                     let result = sender.send((topic.clone(), peer)).await;
@@ -49,8 +46,7 @@ impl Locator {
                                         log::warn!("Could not send peer: {:?}", e);
                                     }
                                 }
-
-                                log::debug!("lookup {:?}", (lookup, query_id));
+                                log::debug!("lookup {:?}", lookup);
                             }
                             e => {
                                 log::debug!("another event {:?}", e);
@@ -62,7 +58,8 @@ impl Locator {
                         log::debug!("Broadcasting new lookup of current topics");
                         for topic in topics.read().await.iter() {
                             if let Ok(query) = QueryOpts::try_from(&topic[..]) {
-                                swarm.write().await.lookup(query);
+                                let result = send.broadcast(Outbound::Lookup(query)).await;
+                                log::trace!("broadcast result {:?}", result);
                             }
                         }
                         timer = Instant::now();
@@ -71,12 +68,11 @@ impl Locator {
             })
         };
 
-        Ok(Self {
+        Self {
             topics,
-            swarm,
+            channel,
             receiver,
-            _job: job,
-        })
+        }
     }
 
     /// # Errors
@@ -84,7 +80,7 @@ impl Locator {
     /// Will return `Err` it failed to register the topics due to concurrent writes
     pub async fn add_topic(&self, topic: &[u8]) -> anyhow::Result<()> {
         let query: QueryOpts = topic.try_into()?;
-        self.swarm.write().await.lookup(query);
+        self.channel.send.broadcast(Outbound::Lookup(query)).await?;
         self.topics.write().await.insert(topic.to_vec());
         Ok(())
     }

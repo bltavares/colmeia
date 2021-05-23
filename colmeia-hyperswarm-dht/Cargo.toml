@@ -17,3 +17,7 @@ branch = 'wip'
 version = '1.9.0'
 features = ['unstable']
 
+[dependencies.async-broadcast]
+git = "https://github.com/bltavares/async-broadcast"
+branch = "master"
+
